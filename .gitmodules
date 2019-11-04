@@ -1,0 +1,4 @@
+[submodule "dinastycoin"]
+	path = dinastycoin
+	url = https://github.com/dinastyoffreedom/newdinasty
+	ignore = all

@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>LSMinimumSystemVersion</key>
+  <string>10.10.0</string>
+
+  <key>NSPrincipalClass</key>
+  <string>NSApplication</string>
+
+  <key>CFBundleIconFile</key>
+  <string>appicon.icns</string>
+
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+
+  <key>CFBundleSignature</key>
+  <string>????</string>
+
+  <key>CFBundleExecutable</key>
+  <string>dinastycoin-wallet-gui</string>
+  
+  <key>CFBundleName</key>
+  <string>Dinastycoin GUI</string>
+
+  <key>CFBundleIdentifier</key>
+  <string>org.dinastycoin-project.dinastycoin-wallet-gui</string>
+
+  <key>NSSupportsAutomaticGraphicsSwitching</key>
+  <true/>
+
+  <key>NSRequiresAquaSystemAppearance</key>
+  <string>True</string>
+
+  <key>CFBundleURLTypes</key>
+  <array>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>dinastycoin Handler</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>dinastycoin</string>
+      </array>
+    </dict>
+    <dict>
+      <key>CFBundleURLName</key>
+      <string>dinastycoinseed Handler</string>
+      <key>CFBundleURLSchemes</key>
+      <array>
+        <string>dinastycoinseed</string>
+      </array>
+    </dict>
+  </array>
+</dict>
+</plist>
