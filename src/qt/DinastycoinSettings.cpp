@@ -4,7 +4,7 @@
 ** Contact: https://www.qt.io/licensing/
 **
 ****************************************************************************/
-// Copyright (c) 2014-2019, The Dinastycoin Project
+// Parts are Copyright (c) 2019, The Dinastycoin team
 //
 // All rights reserved.
 //
