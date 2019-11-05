@@ -1,5 +1,5 @@
 ; Dinastycoin DANTE GUI Wallet Installer for Windows
-; Copyright (c) 2017-2019, The Dinastycoin Project
+; Parts are Copyright (c) 2019, The Dinastycoin team
 ; See LICENSE
 
 [Setup]

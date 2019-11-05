@@ -1,6 +1,6 @@
 # Dinastycoin GUI Wallet Windows Installer #
 
-Copyright (c) 2017-2019, The Dinastycoin Project
+Parts are Copyright (c) 2019, The Dinastycoin team
 
 ## Introduction ##
 

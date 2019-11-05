@@ -1,4 +1,4 @@
-// Copyright (c) 2018, The Dinastycoin Project
+// Parts are Copyright (c) 2019, The Dinastycoin team
 //
 // All rights reserved.
 //
@@ -124,7 +124,7 @@ Rectangle {
                     "actually spent becomes apparent, thereby nullifying the effect of ring signatures, one of the three main layers " +
                     "of privacy protection Dinastycoin uses.<br>" +
                     "To help transactions avoid those inputs, a list of known spent ones can be used to avoid using them in new " +
-                    "transactions. Such a list is maintained by the Dinastycoin project and is available on the dinastycoin.com website, " +
+                    "transactions. Such a list is maintained by The Dinastycoin team and is available on the dinastycoin.com website, " +
                     "and you can import this list here.<br>" +
                     "Alternatively, you can scan the blockchain (and the blockchain of key-reusing Dinastycoin clones) yourself " +
                     "using the dinastycoin-blockchain-mark-spent-outputs tool to create a list of known spent outputs.<br>"
