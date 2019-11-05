@@ -380,6 +380,8 @@ Rectangle {
                         appWindow.currentWallet.segregatePreForkOutputs(segregatePreForkOutputs.checked)
                     }
                 }
+                width: 600
+                Layout.fillWidth: true
             }
 
             DinastycoinComponents.CheckBox {
@@ -392,12 +394,16 @@ Rectangle {
                         appWindow.currentWallet.keyReuseMitigation2(keyReuseMitigation2.checked)
                     }
                 }
+                width: 600
+                Layout.fillWidth: true
             }
 
             DinastycoinComponents.CheckBox {
                 id: setRingRelative
                 checked: true
                 text: qsTr("Relative") + translationManager.emptyString
+                width: 600
+                Layout.fillWidth: true
             }
         }
 

@@ -345,6 +345,8 @@ Rectangle{
                     currentWallet.setTrustedDaemon(persistentSettings.is_trusted_daemon)
                 }
                 text: qsTr("Mark as Trusted Daemon") + translationManager.emptyString
+                width: 600
+                Layout.fillWidth: true
             }
 
             DinastycoinComponents.StandardButton {

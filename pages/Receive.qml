@@ -249,6 +249,7 @@ Rectangle {
                 fontSize: 16
                 iconOnTheLeft: true
                 Layout.fillWidth: true
+                width: 600
                 Layout.topMargin: 10
                 text: qsTr("Create new address") + translationManager.emptyString;
                 onClicked: {

@@ -290,6 +290,7 @@ Rectangle {
                 iconOnTheLeft: true
                 Layout.fillWidth: true
                 Layout.topMargin: 10
+                width: 600
                 text: qsTr("Add address") + translationManager.emptyString;
                 onClicked: {
                     root.showAddAddress();

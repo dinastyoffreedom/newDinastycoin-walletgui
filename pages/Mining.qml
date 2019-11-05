@@ -153,6 +153,8 @@ Rectangle {
                         checked: persistentSettings.allow_background_mining
                         onClicked: {persistentSettings.allow_background_mining = checked}
                         text: qsTr("Background mining (experimental)") + translationManager.emptyString
+                        width: 600
+                        Layout.fillWidth: true
                     }
                 }
 

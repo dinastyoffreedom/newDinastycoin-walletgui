@@ -1308,6 +1308,8 @@ Rectangle {
             DinastycoinComponents.CheckBox {
                 id: humanDatesCheckBox
                 checked: persistentSettings.historyHumanDates
+                width: 600
+                Layout.fillWidth: true
                 onClicked: {
                     persistentSettings.historyHumanDates = !persistentSettings.historyHumanDates
                     root.updateDisplay(root.txOffset, root.txMax, false);

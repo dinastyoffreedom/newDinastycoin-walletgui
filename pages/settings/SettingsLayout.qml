@@ -56,6 +56,8 @@ Rectangle {
             checked: persistentSettings.customDecorations
             onClicked: Windows.setCustomWindowDecorations(checked)
             text: qsTr("Custom decorations") + translationManager.emptyString
+            width: 600
+            Layout.fillWidth: true
         }
 
         DinastycoinComponents.CheckBox {
@@ -66,6 +68,8 @@ Rectangle {
                 appWindow.updateBalance();
             }
             text: qsTr("Hide balance") + translationManager.emptyString
+            width: 600
+            Layout.fillWidth: true
         }
 
         DinastycoinComponents.CheckBox {
@@ -76,6 +80,8 @@ Rectangle {
                 DinastycoinComponents.Style.blackTheme = !DinastycoinComponents.Style.blackTheme;
                 persistentSettings.blackTheme = DinastycoinComponents.Style.blackTheme;
             }
+            width: 600
+            Layout.fillWidth: true
         }
 
         DinastycoinComponents.CheckBox {
@@ -83,6 +89,8 @@ Rectangle {
             checked: persistentSettings.lockOnUserInActivity
             onClicked: persistentSettings.lockOnUserInActivity = !persistentSettings.lockOnUserInActivity
             text: qsTr("Lock wallet on inactivity") + translationManager.emptyString
+            width: 600
+            Layout.fillWidth: true
         }
 
         ColumnLayout {
@@ -157,6 +165,8 @@ Rectangle {
                         appWindow.fiatTimerStop();
                     }
                 }
+                width: 600
+                Layout.fillWidth: true
             }
         }
 
