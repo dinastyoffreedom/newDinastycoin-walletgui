@@ -6,7 +6,7 @@ Parts are Copyright (c) 2019, The Dinastycoin team
 
 - Web: [dinastycoin.com](https://dinastycoin.com)
 - Mail: [dev@dinastycoin.com](mailto:dev@dinastycoin.com)
-- Github: [https://github.com/dinastyoffreedom/dinastycoin-gui](https://github.com/dinastyoffreedom/newdinasty-gui)
+- Github: [https://github.com/dinastyoffreedom/dinastycoin-gui](https://github.com/dinastyoffreedom/newDinastycoin-walletgui)
 
 ## Introduction
 
@@ -99,7 +99,7 @@ The following instructions will fetch Qt from your distribution's repositories i
 
 3. Clone repository
 
-    `git clone https://github.com/dinastyoffreedom/newdinasty-gui.git`
+    `git clone https://github.com/dinastyoffreedom/newDinastycoin-walletgui.git`
 
 4. Build
 
@@ -145,7 +145,7 @@ The executable can be found in the build/release/bin folder.
 
 6. Grab an up-to-date copy of the dinastycoin-gui repository
 
-  `git clone https://github.com/dinastyoffreedom/newdinasty-gui.git`
+  `git clone https://github.com/dinastyoffreedom/newDinastycoin-walletgui.git`
 
 7. Go into the repository
 
@@ -209,7 +209,7 @@ The Dinastycoin GUI on Windows is 64 bits only; 32-bit Windows GUI builds are no
 6. Clone repository
 
     ```
-    git clone https://github.com/dinastyoffreedom/newdinasty-gui.git
+    git clone https://github.com/dinastyoffreedom/newDinastycoin-walletgui.git
     ```
 
 7. Build
@@ -221,6 +221,6 @@ The Dinastycoin GUI on Windows is 64 bits only; 32-bit Windows GUI builds are no
     make deploy
     ```
 
-    **Note:** The use of `source` above is a dirty workaround for a suspected bug in the current QT version 5.11.2-3 available in the MSYS2 packaging system, see https://github.com/dinastyoffreedom/newdinasty-gui/issues/1559 for more info.
+    **Note:** The use of `source` above is a dirty workaround for a suspected bug in the current QT version 5.11.2-3 available in the MSYS2 packaging system, see https://github.com/dinastyoffreedom/newDinastycoin-walletgui/issues/1559 for more info.
 
 The executable can be found in the `.\release\bin` directory.
