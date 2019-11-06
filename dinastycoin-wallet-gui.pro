@@ -16,7 +16,6 @@ packagesExist(libusb-1.0) {
 packagesExist(hidapi-libusb) {
     PKGCONFIG += hidapi-libusb
 }
-#!win32 {
 GCC_VERSION = $$system("g++ -dumpversion")
 GCC_VERSION = $$split(GCC_VERSION, .)
 GCC_VERSION_MAJOR = $$member(GCC_VERSION, 0)
@@ -29,8 +28,10 @@ greaterThan(GCC_VERSION_MAJOR, 9) | if(equals(GCC_VERSION_MAJOR, 9) : greaterTha
     QMAKE_CXXFLAGS += -fPIC -fstack-protector -fstack-protector-strong
     QMAKE_LFLAGS += -fstack-protector -fstack-protector-strong
 }
-
 !win32 {
+#    QMAKE_CXXFLAGS += -fPIC -fstack-protector -fstack-protector-strong
+#    QMAKE_LFLAGS += -fstack-protector -fstack-protector-strong
+
     packagesExist(protobuf) {
         PKGCONFIG += protobuf
     }
