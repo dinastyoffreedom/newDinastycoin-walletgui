@@ -651,7 +651,7 @@ Rectangle {
                                 DinastycoinComponents.TextPlain {
                                     font.family: DinastycoinComponents.Style.fontRegular.name
                                     font.pixelSize: 15
-                                    text: _amount + " XMR"
+                                    text: _amount + " DCY"
                                     color: DinastycoinComponents.Style.defaultFontColor
                                     anchors.verticalCenter: parent.verticalCenter
 
@@ -703,7 +703,7 @@ Rectangle {
                                     font.pixelSize: 15
                                     text: {
                                         if(!isout && confirmationsRequired === 60) return qsTr("Yes") + translationManager.emptyString;
-                                        if(fee !== "") return fee + " XMR";
+                                        if(fee !== "") return fee + " DCY";
                                         return "-";
                                     }
 

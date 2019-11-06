@@ -86,21 +86,21 @@ ApplicationWindow {
     property bool themeTransition: false
 
     // fiat price conversion
-    property int fiatPriceXMRUSD: 0
-    property int fiatPriceXMREUR: 0
+    property int fiatPriceDCYUSD: 0
+    property int fiatPriceDCYEUR: 0
     property var fiatPriceAPIs: {
         return {
             "kraken": {
-                "dcyusd": "https://api.kraken.com/0/public/Ticker?pair=XMRUSD",
-                "dcyeur": "https://api.kraken.com/0/public/Ticker?pair=XMREUR"
+                "dcyusd": "https://api.kraken.com/0/public/Ticker?pair=DCYUSD",
+                "dcyeur": "https://api.kraken.com/0/public/Ticker?pair=DCYEUR"
             },
             "coingecko": {
                 "dcyusd": "https://api.coingecko.com/api/v3/simple/price?ids=dinastycoin&vs_currencies=usd",
                 "dcyeur": "https://api.coingecko.com/api/v3/simple/price?ids=dinastycoin&vs_currencies=eur"
             },
             "cryptocompare": {
-                "dcyusd": "https://min-api.cryptocompare.com/data/price?fsym=XMR&tsyms=USD",
-                "dcyeur": "https://min-api.cryptocompare.com/data/price?fsym=XMR&tsyms=EUR",
+                "dcyusd": "https://min-api.cryptocompare.com/data/price?fsym=DCY&tsyms=USD",
+                "dcyeur": "https://min-api.cryptocompare.com/data/price?fsym=DCY&tsyms=EUR",
             }
         }
     }
@@ -1154,7 +1154,7 @@ ApplicationWindow {
                 return;
             }
 
-            var key = currency === "dcyeur" ? "XXMRZEUR" : "XXMRZUSD";
+            var key = currency === "dcyeur" ? "XDCYZEUR" : "XDCYZUSD";
             var ticker = resp.result[key]["o"];
             return ticker;
         } else if(resp._url.startsWith("https://api.coingecko.com/api/v3/")){
@@ -1213,9 +1213,9 @@ ApplicationWindow {
         }
 
         if(persistentSettings.fiatPriceCurrency === "dcyusd")
-            appWindow.fiatPriceXMRUSD = ticker;
+            appWindow.fiatPriceDCYUSD = ticker;
         else if(persistentSettings.fiatPriceCurrency === "dcyeur")
-            appWindow.fiatPriceXMREUR = ticker;
+            appWindow.fiatPriceDCYEUR = ticker;
 
         appWindow.updateBalance();
     }
@@ -1243,7 +1243,7 @@ ApplicationWindow {
 
     function fiatApiUpdateBalance(balance){
         // update balance card
-        var ticker = persistentSettings.fiatPriceCurrency === "dcyusd" ? appWindow.fiatPriceXMRUSD : appWindow.fiatPriceXMREUR;
+        var ticker = persistentSettings.fiatPriceCurrency === "dcyusd" ? appWindow.fiatPriceDCYUSD : appWindow.fiatPriceDCYEUR;
         if(ticker <= 0){
             console.log(fiatApiError("Could not update balance card; invalid ticker value"));
             leftPanel.balanceFiatString = "?.??";

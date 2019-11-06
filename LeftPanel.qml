@@ -240,7 +240,7 @@ Rectangle {
                         if (persistentSettings.fiatPriceEnabled && persistentSettings.fiatPriceToggle) {
                             return persistentSettings.fiatPriceCurrency == "dcyusd" ? "USD" : "EUR"
                         } else {
-                            return "XMR"
+                            return "DCY"
                         }
                     }
                     color: DinastycoinComponents.Style.blackTheme ? "white" : "black"

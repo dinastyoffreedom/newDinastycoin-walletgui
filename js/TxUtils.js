@@ -75,12 +75,12 @@ function isValidOpenAliasAddress(address) {
 }
 
 function makeQRCodeString(addr, amount) {
-    var XMR_URI_SCHEME = "dinastycoin:"
-    var XMR_AMOUNT = "tx_amount"
+    var DCY_URI_SCHEME = "dinastycoin:"
+    var DCY_AMOUNT = "tx_amount"
     var qrCodeString =""
-    qrCodeString += (XMR_URI_SCHEME + addr)
+    qrCodeString += (DCY_URI_SCHEME + addr)
     if (amount !== undefined && amount !== ""){
-      qrCodeString += ("?" + XMR_AMOUNT + "=" + amount)
+      qrCodeString += ("?" + DCY_AMOUNT + "=" + amount)
     }
     return qrCodeString
 }

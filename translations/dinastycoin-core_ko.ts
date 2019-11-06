@@ -3344,7 +3344,7 @@ Spending address index: </source>
     <message>
         <location filename="../main.qml" line="1080"/>
         <source>This address received %1 dinastycoin, with %2 confirmation(s).</source>
-        <translation>이 주소로 %1 XMR을 받아, %2 번의 컨펌을 받았습니다.</translation>
+        <translation>이 주소로 %1 DCY을 받아, %2 번의 컨펌을 받았습니다.</translation>
     </message>
     <message>
         <location filename="../main.qml" line="2114"/>
@@ -3428,7 +3428,7 @@ your input may be required.</source>
     <message>
         <location filename="../main.qml" line="1077"/>
         <source>This address received %1 dinastycoin, but the transaction is not yet mined</source>
-        <translation>이 주소는 % 1XMR을 받았지만, 해당 거래가 아직 채굴에 포함되지 않았습니다</translation>
+        <translation>이 주소는 % 1DCY을 받았지만, 해당 거래가 아직 채굴에 포함되지 않았습니다</translation>
     </message>
     <message>
         <location filename="../main.qml" line="1084"/>
