@@ -5,7 +5,7 @@ Parts are Copyright (c) 2019, The Dinastycoin team
 ## Development resources
 
 - Web: [dinastycoin.com](https://dinastycoin.com)
-- Mail: [dev@dinastycoin.com](mailto:dev@dinastycoin.com)
+- Mail: [admin@dinastycoin.com](mailto:admin@dinastycoin.com)
 - Github: [https://github.com/dinastyoffreedom/dinastycoin-gui](https://github.com/dinastyoffreedom/newDinastycoin-walletgui)
 
 ## Introduction
@@ -28,9 +28,9 @@ As with many development projects, the repository on Github is considered to be 
 
 Dinastycoin is a 100% community-sponsored endeavor. If you want to join our efforts, the easiest thing you can do is support the project financially. Both Dinastycoin and Bitcoin donations can be made to **donate.dinastycoin.com** if using a client that supports the [OpenAlias](https://openalias.org) standard.
 
-The Dinastycoin donation address is: `44AFFq5kSiGBoZ4NMDwYtN18obc8AemS33DBLWs3H7otXft3XjrpDtQGv7SqSsaBYBb98uNbr2VBBEt7f2wfn3RVGQBEP3A` (viewkey: `f359631075708155cc3d92a32b75a7d02a5dcf27756707b47a2b31b21c389501`)
+The Dinastycoin donation address is: `NYz4mXJcoxV9TNiymiSYxu62qKu7bjTgDZWJjvMUKVPvZ1VGEW6VrNxh8WJjddi7Hr56MYbyK2Hp6CWZ2Uyfat9V5Lhvz2BAJe` 
 
-The Bitcoin donation address is: `1KTexdemPdxSBcG55heUuTjDRYqbC5ZL8H`
+The Bitcoin donation address is: `3D2iF1uccLmdeKErB2N1Rtd7N2HdRWrjdm`
 
 GUI development funding and/or some supporting services are also graciously provided by sponsors:
 
@@ -116,7 +116,7 @@ The executable can be found in the build/release/bin folder.
 
 2. Install [homebrew](http://brew.sh/)
 
-3. Install [dinastycoin](https://github.com/dinastyoffreedom/newdinasty) dependencies:
+3. Install [dinastycoin](https://github.com/dinastyoffreedom/newdinastycoin) dependencies:
 
   `brew install boost`
 
@@ -190,7 +190,7 @@ The Dinastycoin GUI on Windows is 64 bits only; 32-bit Windows GUI builds are no
       pacman -S mingw-w64-x86_64-zbar
       ```
 
-    You find more details about those dependencies in the [Dinastycoin documentation](https://github.com/dinastyoffreedom/newdinasty). Note that that there is no more need to compile Boost from source; like everything else, you can install it now with a MSYS2 package.
+    You find more details about those dependencies in the [Dinastycoin documentation](https://github.com/dinastyoffreedom/newdinastycoin). Note that that there is no more need to compile Boost from source; like everything else, you can install it now with a MSYS2 package.
 
 4. Install Qt5
 
