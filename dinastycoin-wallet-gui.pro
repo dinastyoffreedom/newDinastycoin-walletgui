@@ -16,6 +16,7 @@ packagesExist(libusb-1.0) {
 packagesExist(hidapi-libusb) {
     PKGCONFIG += hidapi-libusb
 }
+
 GCC_VERSION = $$system("g++ -dumpversion")
 GCC_VERSION = $$split(GCC_VERSION, .)
 GCC_VERSION_MAJOR = $$member(GCC_VERSION, 0)
@@ -28,15 +29,12 @@ greaterThan(GCC_VERSION_MAJOR, 9) | if(equals(GCC_VERSION_MAJOR, 9) : greaterTha
     QMAKE_CXXFLAGS += -fPIC -fstack-protector -fstack-protector-strong
     QMAKE_LFLAGS += -fstack-protector -fstack-protector-strong
 }
-!win32 {
-#    QMAKE_CXXFLAGS += -fPIC -fstack-protector -fstack-protector-strong
-#    QMAKE_LFLAGS += -fstack-protector -fstack-protector-strong
 
+!win32 {
     packagesExist(protobuf) {
         PKGCONFIG += protobuf
     }
 }
-
 
 # cleaning "auto-generated" bitdinastycoin directory on "make distclean"
 QMAKE_DISTCLEAN += -r $$WALLET_ROOT
@@ -372,11 +370,19 @@ macx {
     #     message("using static libraries")
     #     LIBS+= -Wl,-Bstatic
     # }
+
+    OPENSSL_LIBRARY_DIRS = $$system(brew --prefix openssl, lines, EXIT_CODE)
+    equals(EXIT_CODE, 0) {
+        OPENSSL_LIBRARY_DIRS = $$OPENSSL_LIBRARY_DIRS/lib
+    } else {
+        OPENSSL_LIBRARY_DIRS = /usr/local/ssl/lib
+    }
+
     QT += macextras
     OBJECTIVE_SOURCES += src/qt/macoshelper.mm
     LIBS+= \
         -L/usr/local/lib \
-        -L/usr/local/opt/openssl/lib \
+        -L$$OPENSSL_LIBRARY_DIRS \
         -L/usr/local/opt/boost/lib \
         -lboost_serialization \
         -lboost_thread-mt \
@@ -506,6 +512,9 @@ DISTFILES += \
     notes.txt \
     dinastycoin/src/wallet/CMakeLists.txt
 
+VERSION = $$cat('version.js', lines)
+VERSION = $$find(VERSION, 'GUI_VERSION')
+VERSION = $$replace(VERSION, '.*(\d+\.\d+\.\d+\.\d+).*', '\1')
 
 # windows application icon
 RC_ICONS = images/appicon.ico

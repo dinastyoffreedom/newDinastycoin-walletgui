@@ -52,7 +52,7 @@ Rectangle {
     property int mixin: 10  // (ring size 11)
     property string warningContent: ""
     property string sendButtonWarning: ""
-    property string startLinkText: qsTr("<style type='text/css'>a {text-decoration: none; color: #FF6C3C; font-size: 14px;}</style><font size='2'> (</font><a href='#'>Start daemon</a><font size='2'>)</font>") + translationManager.emptyString
+    property string startLinkText: qsTr("<style type='text/css'>a {text-decoration: none; color: #FF6C3C; font-size: 14px;}</style><font size='2'> </font><a href='#'>(Start daemon)</a>") + translationManager.emptyString
     property bool showAdvanced: false
     // @TODO: remove after pid removal hardfork
     property bool warningLongPidTransfer: false
@@ -166,8 +166,12 @@ Rectangle {
                   Layout.fillWidth: true
                   inlineIcon: true
                   labelText: qsTr("<style type='text/css'>a {text-decoration: none; color: #858585; font-size: 14px;}</style>\
-                                   Amount <font size='2'>  ( </font> <a href='#'>Change account</a><font size='2'> )</font>")
+                                   Amount <font size='2'> </font> <a href='#'>(Change account)</a>")
                              + translationManager.emptyString
+                  copyButton: !isNaN(amountLine.text) && persistentSettings.fiatPriceEnabled
+                  copyButtonText: fiatApiCurrencySymbol() + " ~" + fiatApiConvertToFiat(amountLine.text)
+                  copyButtonEnabled: false
+
                   onLabelLinkActivated: {
                       middlePanel.accountView.selectAndSend = true;
                       appWindow.showPageRequest("Account")
@@ -238,7 +242,7 @@ Rectangle {
               spacing: 0
               fontBold: true
               labelText: qsTr("<style type='text/css'>a {text-decoration: none; color: #858585; font-size: 14px;}</style>\
-                Address <font size='2'>  ( </font> <a href='#'>Address book</a><font size='2'> )</font>")
+                Address <font size='2'> </font> <a href='#'>(Address book)</a>")
                 + translationManager.emptyString
               labelButtonText: qsTr("Resolve") + translationManager.emptyString
               placeholderText: {
@@ -257,18 +261,14 @@ Rectangle {
                   appWindow.showPageRequest("AddressBook");
               }
               pasteButton: true
-              onPaste: function(clipboardText) {
-                  const parsed = walletManager.parse_uri_to_object(clipboardText);
+              onTextChanged: {
+                  const parsed = walletManager.parse_uri_to_object(text);
                   if (!parsed.error) {
                     addressLine.text = parsed.address;
                     setPaymentId(parsed.payment_id);
                     amountLine.text = parsed.amount;
                     setDescription(parsed.tx_description);
-                  } else {
-                     addressLine.text = clipboardText; 
                   }
-              }
-              onTextChanged: {
                   warningLongPidTransfer = isLongPidService(text);
               }
               inlineButton.text: FontAwesome.qrcode
@@ -343,8 +343,9 @@ Rectangle {
               CheckBox {
                   id: descriptionCheckbox
                   border: false
-                  checkedIcon: "qrc:///images/plus-in-circle-medium-white.png"
-                  uncheckedIcon: "qrc:///images/plus-in-circle-medium-white.png"
+                  checkedIcon: FontAwesome.minusCircle
+                  uncheckedIcon: FontAwesome.plusCircle
+                  fontAwesomeIcons: true
                   fontSize: descriptionLine.labelFontSize
                   iconOnTheLeft: true
                   Layout.fillWidth: true
@@ -370,8 +371,9 @@ Rectangle {
               CheckBox {
                   id: paymentIdCheckbox
                   border: false
-                  checkedIcon: "qrc:///images/plus-in-circle-medium-white.png"
-                  uncheckedIcon: "qrc:///images/plus-in-circle-medium-white.png"
+                    checkedIcon: FontAwesome.minusCircle
+                    uncheckedIcon: FontAwesome.plusCircle
+                    fontAwesomeIcons: true
                   fontSize: paymentIdLine.labelFontSize
                   iconOnTheLeft: true
                   Layout.fillWidth: true
@@ -756,7 +758,8 @@ Rectangle {
 
         // Currently opened wallet is not view-only
         if(appWindow.viewOnly){
-            root.sendButtonWarning = qsTr("Wallet is view-only and sends are not possible.") + translationManager.emptyString;
+            root.sendButtonWarning = qsTr("Wallet is view-only and sends are not possible. Unless key images are imported, " + 
+                                    "the balance reflects only incoming but not outgoing transactions.") + translationManager.emptyString;
             return false;
         }
 

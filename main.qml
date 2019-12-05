@@ -47,7 +47,7 @@ import "js/Windows.js" as Windows
 
 ApplicationWindow {
     id: appWindow
-    title: "Dinastycoin"
+    title: "Dinastycoin" + (walletName ? " - " + walletName : "")
 
     property var currentItem
     property bool hideBalanceForced: false
@@ -86,8 +86,8 @@ ApplicationWindow {
     property bool themeTransition: false
 
     // fiat price conversion
-    property int fiatPriceDCYUSD: 0
-    property int fiatPriceDCYEUR: 0
+    property real fiatPriceDCYUSD: 0
+    property real fiatPriceDCYEUR: 0
     property var fiatPriceAPIs: {
         return {
             "kraken": {
@@ -112,7 +112,6 @@ ApplicationWindow {
     property var current_address
     property var current_address_label: "Primary"
     property int current_subaddress_table_index: 0
-    property int current_subaddress_account_table_index: 0
 
     function altKeyReleased() { ctrlPressed = false; }
 
@@ -418,8 +417,6 @@ ApplicationWindow {
         }
 
         leftPanel.minutesToUnlock = (balance !== balanceU) ? currentWallet.history.minutesToUnlock : "";
-        leftPanel.currentAccountIndex = currentWallet.currentSubaddressAccount;
-        leftPanel.currentAccountLabel = currentWallet.getSubaddressLabel(currentWallet.currentSubaddressAccount, 0);
         leftPanel.balanceString = balance
         leftPanel.balanceUnlockedString = balanceU
     }
@@ -469,14 +466,18 @@ ApplicationWindow {
         leftPanel.networkStatus.connected = status
 
         // update local daemon status.
-        if(walletManager.isDaemonLocal(currentDaemonAddress))
-            daemonRunning = status;
+        const isDisconnected = status === Wallet.ConnectionStatus_Disconnected;
+        if (walletManager.isDaemonLocal(currentDaemonAddress)) {
+            daemonRunning = !isDisconnected;
+        } else {
+            daemonRunning = false;
+        }
 
         // Update fee multiplier dropdown on transfer page
         middlePanel.transferView.updatePriorityDropdown();
 
         // If wallet isnt connected, advanced wallet mode and no daemon is running - Ask
-        if (appWindow.walletMode >= 2 && walletManager.isDaemonLocal(currentDaemonAddress) && !walletInitialized && status === Wallet.ConnectionStatus_Disconnected) {
+        if (appWindow.walletMode >= 2 && walletManager.isDaemonLocal(currentDaemonAddress) && !walletInitialized && isDisconnected) {
             daemonManager.runningAsync(persistentSettings.nettype, function(running) {
                 if (!running) {
                     daemonManagerDialog.open();
@@ -598,10 +599,19 @@ ApplicationWindow {
 
     function connectRemoteNode() {
         console.log("connecting remote node");
-        persistentSettings.useRemoteNode = true;
-        currentDaemonAddress = persistentSettings.remoteNodeAddress;
-        currentWallet.initAsync(currentDaemonAddress, isTrustedDaemon());
-        walletManager.setDaemonAddressAsync(currentDaemonAddress);
+
+        const callback = function() {
+            persistentSettings.useRemoteNode = true;
+            currentDaemonAddress = persistentSettings.remoteNodeAddress;
+            currentWallet.initAsync(currentDaemonAddress, isTrustedDaemon());
+            walletManager.setDaemonAddressAsync(currentDaemonAddress);
+        };
+
+        if (typeof daemonManager != "undefined" && daemonRunning) {
+            showDaemonIsRunningDialog(callback);
+        } else {
+            callback();
+        }
     }
 
     function disconnectRemoteNode() {
@@ -1241,17 +1251,32 @@ ApplicationWindow {
         Prices.getJSON(url);
     }
 
-    function fiatApiUpdateBalance(balance){
-        // update balance card
+    function fiatApiCurrencySymbol() {
+        switch (persistentSettings.fiatPriceCurrency) {
+            case "dcyusd":
+                return "USD";
+            case "dcyeur":
+                return "EUR";
+            default:
+                console.error("unsupported currency", persistentSettings.fiatPriceCurrency);
+                return "UNSUPPORTED";
+        }
+    }
+
+    function fiatApiConvertToFiat(amount) {
         var ticker = persistentSettings.fiatPriceCurrency === "dcyusd" ? appWindow.fiatPriceDCYUSD : appWindow.fiatPriceDCYEUR;
         if(ticker <= 0){
-            console.log(fiatApiError("Could not update balance card; invalid ticker value"));
-            leftPanel.balanceFiatString = "?.??";
-            return;
+            console.log(fiatApiError("Invalid ticker value: " + ticker));
+            return "?.??";
         }
+        return (amount * ticker).toFixed(2);
+    }
+
+    function fiatApiUpdateBalance(balance){
+        // update balance card
         var bFiat = "?.??"
         if (!hideBalanceForced && !persistentSettings.hideBalance) {
-            bFiat = (balance * ticker).toFixed(2);
+            bFiat = fiatApiConvertToFiat(balance);
         }
         leftPanel.balanceFiatString = bFiat;
     }
@@ -1569,14 +1594,12 @@ ApplicationWindow {
         states: [
             State {
                 name: "wizard"
-                PropertyChanges { target: leftPanel; visible: false }
                 PropertyChanges { target: middlePanel; visible: false }
                 PropertyChanges { target: wizard; visible: true }
                 PropertyChanges { target: resizeArea; visible: true }
                 PropertyChanges { target: titleBar; state: "essentials" }
             }, State {
                 name: "normal"
-                PropertyChanges { target: leftPanel; visible: true }
                 PropertyChanges { target: middlePanel; visible: true }
                 PropertyChanges { target: wizard; visible: false }
                 PropertyChanges { target: resizeArea; visible: true }
@@ -1589,6 +1612,14 @@ ApplicationWindow {
             anchors.top: parent.top
             anchors.left: parent.left
             anchors.bottom: parent.bottom
+            visible: rootItem.state == "normal" && middlePanel.state != "Merchant"
+            currentAccountIndex: currentWallet ? currentWallet.currentSubaddressAccount : 0
+            currentAccountLabel: {
+                if (currentWallet) {
+                    return currentWallet.getSubaddressLabel(currentWallet.currentSubaddressAccount, 0);
+                }
+                return qsTr("Primary account") + translationManager.emptyString;
+            }
 
             onTransferClicked: {
                 middlePanel.state = "Transfer";
@@ -1660,6 +1691,7 @@ ApplicationWindow {
 
         MiddlePanel {
             id: middlePanel
+            accountView.currentAccountIndex: currentWallet ? currentWallet.currentSubaddressAccount : 0
             anchors.top: parent.top
             anchors.bottom: parent.bottom
             anchors.left: leftPanel.visible ?  leftPanel.right : parent.left
@@ -1902,6 +1934,23 @@ ApplicationWindow {
         statusMessage.visible = true
     }
 
+    function showDaemonIsRunningDialog(onClose) {
+        // Show confirmation dialog
+        confirmationDialog.title = qsTr("Local node is running") + translationManager.emptyString;
+        confirmationDialog.text  = qsTr("Do you want to stop local node or keep it running in the background?") + translationManager.emptyString;
+        confirmationDialog.icon = StandardIcon.Question;
+        confirmationDialog.cancelText = qsTr("Force stop") + translationManager.emptyString;
+        confirmationDialog.okText = qsTr("Keep it running") + translationManager.emptyString;
+        confirmationDialog.onAcceptedCallback = function() {
+            onClose();
+        }
+        confirmationDialog.onRejectedCallback = function() {
+            daemonManager.stop(persistentSettings.nettype);
+            onClose();
+        };
+        confirmationDialog.open();
+    }
+
     onClosing: {
         close.accepted = false;
         console.log("blocking close event");
@@ -1923,27 +1972,12 @@ ApplicationWindow {
 
         // If daemon is running - prompt user before exiting
         if(typeof daemonManager != "undefined" && daemonRunning) {
-            // Show confirmation dialog
-            confirmationDialog.title = qsTr("Daemon is running") + translationManager.emptyString;
-            confirmationDialog.text  = qsTr("Daemon will still be running in background when GUI is closed.");
-            confirmationDialog.icon = StandardIcon.Question
-            confirmationDialog.cancelText = qsTr("Stop daemon")
-            confirmationDialog.onAcceptedCallback = function() {
-                closeAccepted();
-            }
-
-            confirmationDialog.onRejectedCallback = function() {
-                daemonManager.stop(persistentSettings.nettype);
-                closeAccepted();
-            };
-
             if (appWindow.walletMode == 0) {
                 stopDaemon();
                 closeAccepted();
             } else {
-                confirmationDialog.open();
+                showDaemonIsRunningDialog(closeAccepted);
             }
-
         } else {
             closeAccepted();
         }
@@ -1965,17 +1999,12 @@ ApplicationWindow {
         if (parts.length == 4) {
             var version = parts[0]
             var hash = parts[1]
-            //var user_url = parts[2]
-            //var auto_url = parts[3]
-            var osBuildTag = isMac ? "mac-x64" : isWindows ? "win-x64" : isLinux ? "linux-x64" : "unknownBuildTag"
-            var extension = isMac || isLinux ? ".tar.bz2" : isWindows ? ".zip" : ".unknownExtension"
-            var base_url = "https://downloads.dinastycoin.com/gui/dinastycoin-gui-"
-            var download_url = base_url + osBuildTag + "-v" + version + extension
+            var user_url = parts[2]
             var msg = ""
-            if (osBuildTag !== "unknownBuildTag") {
-                msg = qsTr("New version of Dinastycoin v.%1 is available.<br><br>Download:<br>%2<br><br>SHA256 Hash:<br>%3").arg(version).arg(download_url).arg(hash) + translationManager.emptyString
+            if (isMac || isWindows || isLinux) {
+                msg = qsTr("New version of Dinastycoin v%1 is available.<br><br>Download:<br>%2<br><br>SHA256 Hash:<br>%3").arg(version).arg(user_url).arg(hash) + translationManager.emptyString
             } else {
-                msg = qsTr("New version of Dinastycoin is available. Check out dinastycoin.com") + translationManager.emptyString
+                msg = qsTr("New version of Dinastycoin v%1 is available. Check out dinastycoin.com").arg(version) + translationManager.emptyString
             }
             notifier.show(msg)
         } else {
@@ -2011,7 +2040,9 @@ ApplicationWindow {
     // some fields need an extra nudge when changing languages
     function resetLanguageFields(){
         clearDinastycoinCardLabelText()
-        onWalletRefresh()
+        if (currentWallet) {
+            onWalletRefresh();
+        }
     }
 
     function userActivity() {

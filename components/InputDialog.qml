@@ -86,7 +86,7 @@ Item {
                 color: DinastycoinComponents.Style.defaultFontColor
             }
 
-            TextField {
+            DinastycoinComponents.Input {
                 id : input
                 focus: true
                 Layout.topMargin: 6

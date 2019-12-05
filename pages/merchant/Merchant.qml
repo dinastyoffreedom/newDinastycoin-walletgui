@@ -33,8 +33,6 @@ Item {
     property var    hiddenAmounts: []
 
     function onPageCompleted() {
-        appWindow.hideMenu();
-
         // prepare tracking
         trackingCheckbox.checked = root.enableTracking
         root.update();
@@ -56,8 +54,6 @@ Item {
         timer.running = false
         root.enableTracking = false
         trackingModel.clear()
-
-        appWindow.showMenu();
     }
 
     Image {
@@ -459,7 +455,7 @@ Item {
                         width: 220
                         source: "qrc:///images/merchant/input_box.png"
 
-                        TextField {
+                        DinastycoinComponents.Input {
                             id: amountToReceive
                             topPadding: 0
                             leftPadding: 10

@@ -181,7 +181,6 @@ Rectangle {
             Layout.rightMargin: sideMargin
             columns: 2
             columnSpacing: 20
-            z: 6
 
             DinastycoinComponents.DatePicker {
                 id: fromDatePicker

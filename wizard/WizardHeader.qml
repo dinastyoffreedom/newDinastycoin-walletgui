@@ -41,7 +41,7 @@ ColumnLayout {
     spacing: 4
     Layout.maximumWidth: wizardController.wizardSubViewWidth
 
-    TextArea {
+    Text {
         text: title
         Layout.fillWidth: true
         font.family: DinastycoinComponents.Style.fontRegular.name
@@ -55,19 +55,13 @@ ColumnLayout {
             }
         }
 
-        selectionColor: DinastycoinComponents.Style.textSelectionColor
-        selectedTextColor: DinastycoinComponents.Style.textSelectedColor
-
-        selectByMouse: true
         wrapMode: Text.WordWrap
-        textMargin: 0
         leftPadding: 0
         topPadding: 0
         bottomPadding: 0
-        readOnly: true
     }
 
-    TextArea {
+    Text {
         Layout.fillWidth: true
         Layout.alignment: Qt.AlignCenter
         visible: parent.subtitle !== ""
@@ -84,14 +78,8 @@ ColumnLayout {
             }
         }
 
-        selectionColor: DinastycoinComponents.Style.textSelectionColor
-        selectedTextColor: DinastycoinComponents.Style.textSelectedColor
-
-        selectByMouse: true
         wrapMode: Text.WordWrap
-        textMargin: 0
         leftPadding: 0
         topPadding: 0
-        readOnly: true
     }
 }

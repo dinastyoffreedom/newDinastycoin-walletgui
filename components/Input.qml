@@ -32,6 +32,7 @@ import QtQuick 2.9
 import "../components" as DinastycoinComponents
 
 TextField {
+    id: textField
     font.family: DinastycoinComponents.Style.fontRegular.name
     font.pixelSize: 18
     font.bold: true
@@ -43,5 +44,13 @@ TextField {
 
     background: Rectangle {
         color: "transparent"
+    }
+
+    DinastycoinComponents.ContextMenu {
+        cursorShape: Qt.IBeamCursor
+        onPaste: {
+            textField.clear();
+            textField.paste();
+        }
     }
 }

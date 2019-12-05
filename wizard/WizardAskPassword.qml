@@ -150,7 +150,7 @@ ColumnLayout {
             color: DinastycoinComponents.Style.defaultFontColor
         }
 
-        TextField {
+        DinastycoinComponents.Input {
             id: passwordInput
 
             Layout.topMargin: 6
@@ -207,7 +207,7 @@ ColumnLayout {
             color: DinastycoinComponents.Style.defaultFontColor
         }
 
-        TextField {
+        DinastycoinComponents.Input {
             id : passwordInputConfirm
             
             Layout.topMargin: 6

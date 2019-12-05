@@ -187,7 +187,7 @@ Item {
                 text: qsTr("CAPSLOCKS IS ON.") + translationManager.emptyString;
             }
 
-            TextField {
+            DinastycoinComponents.Input {
                 id: passwordInput1
                 Layout.topMargin: 6
                 Layout.fillWidth: true
@@ -203,6 +203,7 @@ Item {
                         return passwordInput2
                     }
                 }
+                implicitHeight: 50
                 bottomPadding: 10
                 leftPadding: 10
                 topPadding: 10
@@ -296,7 +297,7 @@ Item {
                 color: DinastycoinComponents.Style.defaultFontColor
             }
 
-            TextField {
+            DinastycoinComponents.Input {
                 id: passwordInput2
                 visible: !passwordDialogMode
                 Layout.topMargin: 6
@@ -307,6 +308,7 @@ Item {
                 font.pixelSize: 24
                 echoMode: TextInput.Password
                 KeyNavigation.tab: okButton
+                implicitHeight: 50
                 bottomPadding: 10
                 leftPadding: 10
                 topPadding: 10

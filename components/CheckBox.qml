@@ -38,8 +38,10 @@ Item {
     property alias text: label.text
     property string checkedIcon: "qrc:///images/check-white.svg"
     property string uncheckedIcon
+    property bool fontAwesomeIcons: false
     property int imgWidth: 13
     property int imgHeight: 13
+    property bool toggleOnClick: true
     property bool checked: false
     property alias background: backgroundRect.color
     property bool border: true
@@ -51,7 +53,9 @@ Item {
     width: checkBoxLayout.width
 
     function toggle(){
-        checkBox.checked = !checkBox.checked
+        if (checkBox.toggleOnClick) {
+            checkBox.checked = !checkBox.checked
+        }
         checkBox.clicked()
     }
 
@@ -88,9 +92,11 @@ Item {
                 width: checkBox.imgWidth
                 height: checkBox.imgHeight
                 color: DinastycoinComponents.Style.defaultFontColor
-                fontAwesomeFallbackIcon: FontAwesome.plus
+                fontAwesomeFallbackIcon: checkBox.fontAwesomeIcons ? getIcon() : FontAwesome.plus
                 fontAwesomeFallbackSize: 14
-                image: {
+                image: checkBox.fontAwesomeIcons ? "" : getIcon()
+
+                function getIcon() {
                     if (checkBox.checked || checkBox.uncheckedIcon == "")
                         return checkBox.checkedIcon;
                     return checkBox.uncheckedIcon;

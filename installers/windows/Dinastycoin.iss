@@ -1,5 +1,5 @@
 ; Dinastycoin DANTE GUI Wallet Installer for Windows
-; Parts are Copyright (c) 2019, The Dinastycoin team
+; Copyright (c) 2017-2019, The Dinastycoin Project
 ; See LICENSE
 
 [Setup]
@@ -197,7 +197,7 @@ begin
   // Additional wizard page for entering a special blockchain location
   blockChainDefaultDir := ExpandConstant('{commonappdata}\bitdinastycoin');
   s := 'The default folder to store the Dinastycoin blockchain is ' + blockChainDefaultDir;
-  s := s + '. As this will need more than 70 GB of free space, you may want to use a folder on a different drive.';
+  s := s + '. As this will need more than 74 GB of free space, you may want to use a folder on a different drive.';
   s := s + ' If yes, specify that folder here.';
 
   BlockChainDirPage := CreateInputDirPage(wpSelectDir,
@@ -313,7 +313,7 @@ end;
 ; Icons in the "Dinastycoin GUI Wallet" program group
 ; Windows will almost always display icons in alphabetical order, per level, so specify the text accordingly
 Name: "{group}\GUI Wallet"; Filename: "{app}\dinastycoin-wallet-gui.exe";
-Name: "{group}\GUI Wallet Guide"; Filename: "{app}\dinastycoin-GUI-guide.pdf"; IconFilename: "{app}\dinastycoin-wallet-gui.exe"
+Name: "{group}\GUI Wallet Guide"; Filename: "{app}\dinastycoin-gui-wallet-guide.pdf"; IconFilename: "{app}\dinastycoin-wallet-gui.exe"
 Name: "{group}\Uninstall GUI Wallet"; Filename: "{uninstallexe}"
 
 ; Sub-folder "Utilities";

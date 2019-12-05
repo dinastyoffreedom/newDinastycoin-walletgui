@@ -185,7 +185,7 @@ Rectangle {
                         }
                     }
 
-                    TextArea {
+                    DinastycoinComponents.InputMulti {
                         id: seedInput
                         property bool error: false
                         width: parent.width

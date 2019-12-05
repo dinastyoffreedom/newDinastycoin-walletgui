@@ -76,6 +76,7 @@ Rectangle {
             id: themeCheckbox
             checked: !DinastycoinComponents.Style.blackTheme
             text: qsTr("Light theme") + translationManager.emptyString
+            toggleOnClick: false
             onClicked: {
                 DinastycoinComponents.Style.blackTheme = !DinastycoinComponents.Style.blackTheme;
                 persistentSettings.blackTheme = DinastycoinComponents.Style.blackTheme;
@@ -100,7 +101,8 @@ Rectangle {
             Layout.leftMargin: 42
             spacing: 0
 
-            DinastycoinComponents.TextBlock {
+            Text {
+                color: DinastycoinComponents.Style.defaultFontColor
                 font.pixelSize: 14
                 Layout.fillWidth: true
                 text: {
@@ -149,6 +151,12 @@ Rectangle {
                 }
 
                 onMoved: persistentSettings.lockOnUserInActivityInterval = userInactivitySlider.value;
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.NoButton
+                    hoverEnabled: true
+                    cursorShape: Qt.PointingHandCursor
+                }
             }
         }
 

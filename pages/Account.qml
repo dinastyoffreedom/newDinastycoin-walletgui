@@ -31,6 +31,7 @@ import QtQuick.Controls 2.0
 import QtQuick.Controls.Styles 1.4
 import QtQuick.Layouts 1.1
 import QtQuick.Dialogs 1.2
+import FontAwesome 1.0
 
 import "../components" as DinastycoinComponents
 import "../components/effects/" as DinastycoinEffects
@@ -48,6 +49,7 @@ Rectangle {
     property var model
     property alias accountHeight: mainLayout.height
     property bool selectAndSend: false
+    property int currentAccountIndex
 
     function renameSubaddressAccountLabel(_index){
         inputDialog.labelText = qsTr("Set the label of the selected account:") + translationManager.emptyString;
@@ -179,6 +181,7 @@ Rectangle {
                     clip: true
                     boundsBehavior: ListView.StopAtBounds
                     interactive: false
+                    currentIndex: currentAccountIndex
 
                     delegate: Rectangle {
                         id: tableItem2
@@ -210,7 +213,7 @@ Rectangle {
 
                             DinastycoinComponents.Label {
                                 id: idLabel
-                                color: index === appWindow.current_subaddress_account_table_index ? DinastycoinComponents.Style.defaultFontColor : "#757575"
+                                color: index === currentAccountIndex ? DinastycoinComponents.Style.defaultFontColor : "#757575"
                                 anchors.verticalCenter: parent.verticalCenter
                                 anchors.left: parent.left
                                 anchors.leftMargin: 6
@@ -277,9 +280,9 @@ Rectangle {
                                 onEntered: tableItem2.color = DinastycoinComponents.Style.titleBarButtonHoverColor
                                 onExited: tableItem2.color = "transparent"
                                 onClicked: {
-                                    if (index == subaddressAccountListView.currentIndex && selectAndSend)
+                                    appWindow.currentWallet.switchSubaddressAccount(index);
+                                    if (selectAndSend)
                                         appWindow.showPageRequest("Transfer");
-                                    subaddressAccountListView.currentIndex = index;
                                 }
                             }
                         }
@@ -318,17 +321,9 @@ Rectangle {
                             }
                         }
                     }
-                    onCurrentItemChanged: {
-                        // reset global vars
-                        appWindow.current_subaddress_account_table_index = subaddressAccountListView.currentIndex;
-                        appWindow.currentWallet.switchSubaddressAccount(appWindow.current_subaddress_account_table_index);
-                        appWindow.onWalletUpdate();
-                    }
 
                     onCurrentIndexChanged: {
-                        if (selectAndSend) {
-                            appWindow.showPageRequest("Transfer");
-                        }
+                        appWindow.onWalletUpdate();
                     }
                 }
             }
@@ -349,8 +344,9 @@ Rectangle {
                 id: addNewAccountCheckbox 
                 visible: !selectAndSend
                 border: false
-                checkedIcon: "qrc:///images/plus-in-circle-medium-white.png" 
-                uncheckedIcon: "qrc:///images/plus-in-circle-medium-white.png" 
+                uncheckedIcon: FontAwesome.plusCircle
+                toggleOnClick: false
+                fontAwesomeIcons: true
                 fontSize: 16
                 iconOnTheLeft: true
                 Layout.fillWidth: true
@@ -363,8 +359,6 @@ Rectangle {
                     inputDialog.onAcceptedCallback = function() {
                         appWindow.currentWallet.subaddressAccount.addRow(inputDialog.inputText)
                         appWindow.currentWallet.switchSubaddressAccount(appWindow.currentWallet.numSubaddressAccounts() - 1)
-                        current_subaddress_account_table_index = appWindow.currentWallet.numSubaddressAccounts() - 1
-                        subaddressAccountListView.currentIndex = current_subaddress_account_table_index
                         appWindow.onWalletUpdate();
                     }
                     inputDialog.onRejectedCallback = null;

@@ -40,8 +40,8 @@ import "components/effects/" as DinastycoinEffects
 Rectangle {
     id: panel
 
-    property int currentAccountIndex: 0
-    property string currentAccountLabel: "Primary account"
+    property int currentAccountIndex
+    property alias currentAccountLabel: accountLabel.text
     property string balanceString: "?.??"
     property string balanceUnlockedString: "?.??"
     property string balanceFiatString: "?.??"
@@ -184,7 +184,7 @@ Rectangle {
                 DinastycoinComponents.Label {
                     fontSize: 12
                     id: accountIndex
-                    text: qsTr("Account") + " #" + currentAccountIndex
+                    text: qsTr("Account") + translationManager.emptyString + " #" + currentAccountIndex
                     color: DinastycoinComponents.Style.blackTheme ? "white" : "black"
                     anchors.left: parent.left
                     anchors.leftMargin: 60
@@ -204,7 +204,6 @@ Rectangle {
                     fontSize: 16
                     id: accountLabel
                     textWidth: 170
-                    text: currentAccountLabel
                     color: DinastycoinComponents.Style.blackTheme ? "white" : "black"
                     anchors.left: parent.left
                     anchors.leftMargin: 60
@@ -238,7 +237,7 @@ Rectangle {
                     font.pixelSize: 16
                     text: {
                         if (persistentSettings.fiatPriceEnabled && persistentSettings.fiatPriceToggle) {
-                            return persistentSettings.fiatPriceCurrency == "dcyusd" ? "USD" : "EUR"
+                            return appWindow.fiatApiCurrencySymbol();
                         } else {
                             return "DCY"
                         }

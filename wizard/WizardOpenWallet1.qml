@@ -198,7 +198,7 @@ Rectangle {
                                     Layout.fillWidth: true
                                 }
 
-                                TextArea {
+                                Text {
                                     text: {
                                         // truncate on window width
                                         var maxLength = wizardController.layoutScale <= 1 ? 12 : 16
@@ -214,19 +214,13 @@ Rectangle {
                                     color: DinastycoinComponents.Style.defaultFontColor
                                     font.pixelSize: 16
 
-                                    selectionColor: DinastycoinComponents.Style.dimmedFontColor
-                                    selectedTextColor: DinastycoinComponents.Style.defaultFontColor
-
-                                    selectByMouse: false
                                     wrapMode: Text.WordWrap
-                                    textMargin: 0
                                     leftPadding: 0
                                     topPadding: networktype !== -1 ? 8 : 4
                                     bottomPadding: 0
-                                    readOnly: true
                                 }
 
-                                TextArea {
+                                Text {
                                     visible: networktype !== -1
                                     Layout.preferredHeight: 24
                                     Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
@@ -236,16 +230,10 @@ Rectangle {
                                     color: DinastycoinComponents.Style.dimmedFontColor
                                     font.pixelSize: 14
 
-                                    selectionColor: DinastycoinComponents.Style.textSelectionColor
-                                    selectedTextColor: DinastycoinComponents.Style.textSelectedColor
-
-                                    selectByMouse: false
                                     wrapMode: Text.WordWrap
-                                    textMargin: 0
                                     leftPadding: 0
                                     topPadding: 0
                                     bottomPadding: 0
-                                    readOnly: true
                                 }
 
                                 Item {

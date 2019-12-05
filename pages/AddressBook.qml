@@ -67,21 +67,18 @@ Rectangle {
             spacing: 0
             Layout.fillWidth: true
 
-            TextArea {
+            Text {
                 id: titleLabel
                 Layout.fillWidth: true
                 color: DinastycoinComponents.Style.defaultFontColor
                 font.family: DinastycoinComponents.Style.fontRegular.name
                 font.pixelSize: 32
                 horizontalAlignment: TextInput.AlignLeft
-                selectByMouse: false
                 wrapMode: Text.WordWrap;
-                textMargin: 0
                 leftPadding: 0
                 topPadding: 0
                 text: qsTr("Save your most used addresses here") + translationManager.emptyString
                 width: parent.width
-                readOnly: true
 
                 // @TODO: Legacy. Remove after Qt 5.8.
                 // https://stackoverflow.com/questions/41990013
@@ -91,20 +88,17 @@ Rectangle {
                 }
             }
 
-            TextArea {
+            Text {
                 Layout.fillWidth: true
                 color: DinastycoinComponents.Style.dimmedFontColor
                 font.family: DinastycoinComponents.Style.fontRegular.name
                 font.pixelSize: 16
                 horizontalAlignment: TextInput.AlignLeft
-                selectByMouse: false
                 wrapMode: Text.WordWrap;
-                textMargin: 0
                 leftPadding: 0
                 topPadding: 0
                 text: qsTr("This makes it easier to send or receive Dinastycoin and reduces errors when typing in addresses manually.") + translationManager.emptyString
                 width: parent.width
-                readOnly: true
 
                 // @TODO: Legacy. Remove after Qt 5.8.
                 // https://stackoverflow.com/questions/41990013
@@ -284,13 +278,13 @@ Rectangle {
             DinastycoinComponents.CheckBox {
                 id: addNewEntryCheckbox
                 border: false
-                checkedIcon: "qrc:///images/plus-in-circle-medium-white.png"
-                uncheckedIcon: "qrc:///images/plus-in-circle-medium-white.png"
+                uncheckedIcon: FontAwesome.plusCircle
+                toggleOnClick: false
+                fontAwesomeIcons: true
                 fontSize: 16
                 iconOnTheLeft: true
                 Layout.fillWidth: true
                 Layout.topMargin: 10
-                width: 600
                 text: qsTr("Add address") + translationManager.emptyString;
                 onClicked: {
                     root.showAddAddress();
@@ -326,8 +320,8 @@ Rectangle {
                 wrapMode: Text.WrapAnywhere
                 addressValidation: true
                 pasteButton: true
-                onPaste: function(clipboardText) {
-                    const parsed = walletManager.parse_uri_to_object(clipboardText);
+                onTextChanged: {
+                    const parsed = walletManager.parse_uri_to_object(addressLine.text);
                     if (!parsed.error) {
                         addressLine.text = parsed.address;
                         descriptionLine.text = parsed.tx_description;
