@@ -404,15 +404,17 @@ ApplicationWindow {
     function updateBalance() {
         if (!currentWallet)
             return;
-
+        
         var balance = "?.??";
         var balanceU = "?.??";
         if(!hideBalanceForced && !persistentSettings.hideBalance){
             balance = walletManager.displayAmount(currentWallet.balance(currentWallet.currentSubaddressAccount));
             balanceU = walletManager.displayAmount(currentWallet.unlockedBalance(currentWallet.currentSubaddressAccount));
         }
-
+        //for test code
+        console.error("---------fiatPriceEnabled = ", persistentSettings.fiatPriceEnabled);
         if (persistentSettings.fiatPriceEnabled) {
+
             appWindow.fiatApiUpdateBalance(balance);
         }
 

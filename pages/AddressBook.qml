@@ -284,6 +284,7 @@ Rectangle {
                 fontSize: 16
                 iconOnTheLeft: true
                 Layout.fillWidth: true
+		width: 600
                 Layout.topMargin: 10
                 text: qsTr("Add address") + translationManager.emptyString;
                 onClicked: {
