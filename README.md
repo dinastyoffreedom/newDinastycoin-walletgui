@@ -74,7 +74,7 @@ If you need help/support or any info you can contact the localization workgroup 
 
  The recommended way is to install 5.9.7 from the [official Qt installer](https://www.qt.io/download-qt-installer) or [compiling it yourself](https://wiki.qt.io/Install_Qt_5_on_Ubuntu). This ensures you have the correct version. Higher versions *can* work but as it differs from our production build target, slight differences may occur.
 
-The following instructions will fetch Qt from your distribution's repositories instead. Take note of what version it installs. Your mileage may vary.
+The following instructions will fetch Qt from your distribution's repositories instead (prefer this option on ubuntu 20.04+). Take note of what version it installs. Your mileage may vary.
 
   - For Ubuntu 17.10+
 
@@ -100,16 +100,25 @@ The following instructions will fetch Qt from your distribution's repositories i
 3. Clone repository
 
     `git clone https://github.com/dinastyoffreedom/newDinastycoin-walletgui.git`
-
-4. Build
+    
+4. Make all .sh files executable
+    ```
+    chmod u+x newDinastycoin-walletgui/*.sh
 
     ```
-    cd dinastycoin-gui
-    QT_SELECT=5 ./build.sh
+5. Build
+
+    ```
+    cd newDinastycoin-walletgui/ && QT_SELECT=5 ./build.sh
     ```
 
-The executable can be found in the build/release/bin folder.
+6. The executable can be found in the build/release/bin folder:
 
+    ```
+    ~/newDinastycoin-walletgui/build/release/bin/dinastycoin-wallet-gui
+    
+    ```
+    
 ### On OS X:
 
 1. Install Xcode from AppStore
