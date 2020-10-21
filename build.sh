@@ -104,7 +104,7 @@ fi
 # force version update
 get_tag
 # echo "var GUI_VERSION = \"$TAGNAME\"" > version.js
-echo "var GUI_VERSION = \"v3.21.0\"" > version.js
+echo "var GUI_VERSION = \"v3.21.0.0-46-g5bc99ef\"" > version.js
 pushd "$DINASTYCOIN_DIR"
 get_tag
 popd
