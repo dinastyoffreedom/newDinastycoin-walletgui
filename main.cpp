@@ -221,7 +221,7 @@ int main(int argc, char *argv[])
     // screen settings
     // Mobile is designed on 128dpi
     qreal ref_dpi = 128;
-    QRect geo = QApplication::desktop()->availableGeometry();
+    QRect geo = QApplication::primaryScreen()->availableGeometry();
     QRect rect = QGuiApplication::primaryScreen()->geometry();
     qreal dpi = QGuiApplication::primaryScreen()->logicalDotsPerInch();
     qreal physicalDpi = QGuiApplication::primaryScreen()->physicalDotsPerInch();

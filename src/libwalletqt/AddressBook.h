@@ -35,7 +35,7 @@
 #include <QDateTime>
 
 namespace Dinastycoin {
-class AddressBook;
+struct AddressBook;
 }
 class AddressBookRow;
 
