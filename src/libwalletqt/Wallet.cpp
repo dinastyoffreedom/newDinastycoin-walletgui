@@ -68,38 +68,38 @@ public:
 
     }
 
-    virtual void moneySpent(const std::string &txId, uint64_t amount)
+    virtual void moneySpent(const std::string &txId, uint64_t amount) override
     {
         qDebug() << __FUNCTION__;
         emit m_wallet->moneySpent(QString::fromStdString(txId), amount);
     }
 
 
-    virtual void moneyReceived(const std::string &txId, uint64_t amount)
+    virtual void moneyReceived(const std::string &txId, uint64_t amount) override
     {
         qDebug() << __FUNCTION__;
         emit m_wallet->moneyReceived(QString::fromStdString(txId), amount);
     }
 
-    virtual void unconfirmedMoneyReceived(const std::string &txId, uint64_t amount)
+    virtual void unconfirmedMoneyReceived(const std::string &txId, uint64_t amount) override
     {
         qDebug() << __FUNCTION__;
         emit m_wallet->unconfirmedMoneyReceived(QString::fromStdString(txId), amount);
     }
 
-    virtual void newBlock(uint64_t height)
+    virtual void newBlock(uint64_t height) override
     {
         // qDebug() << __FUNCTION__;
         emit m_wallet->newBlock(height, m_wallet->daemonBlockChainTargetHeight());
     }
 
-    virtual void updated()
+    virtual void updated() override
     {
         emit m_wallet->updated();
     }
 
     // called when wallet refreshed by background thread or explicitly
-    virtual void refreshed()
+    virtual void refreshed() override
     {
         qDebug() << __FUNCTION__;
         emit m_wallet->refreshed();
