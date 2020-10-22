@@ -134,7 +134,7 @@ void WalletKeysFilesModel::findWallets(const QString &dinastycoinAccountsDir)
 
         const QFileInfo info(wallet);
         const QDateTime modifiedAt = info.lastModified();
-        const QDateTime createdAt = QFileInfo::birthTime(); //info.created();  // @TODO: QFileInfo::birthTime() >= Qt 5.10
+        const QDateTime createdAt = info.birthTime(); //info.created();  // @TODO: QFileInfo::birthTime() >= Qt 5.10
 
         this->addWalletKeysFile(WalletKeysFiles(modifiedAt.toSecsSinceEpoch(),
                                                 createdAt.toSecsSinceEpoch(),
