@@ -51,7 +51,7 @@ private:
             {
                 auto *watcher = newWatcher<T>();
                 watcher->setFuture(makeFuture(watcher));
-                connect(watcher, &QFutureWatcher<T>::finished, [this, watcher] {
+                connect(watcher, &QFutureWatcher<T>::finished, [watcher] {
                     watcher->deleteLater();
                 });
                 return qMakePair(true, watcher->future());
