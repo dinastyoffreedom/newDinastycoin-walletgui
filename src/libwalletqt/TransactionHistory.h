@@ -34,7 +34,7 @@
 #include <QDateTime>
 
 namespace Dinastycoin {
-class TransactionHistory;
+struct TransactionHistory;
 }
 
 class TransactionInfo;

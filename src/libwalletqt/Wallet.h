@@ -43,7 +43,7 @@
 #include "NetworkType.h"
 
 namespace Dinastycoin {
-    class Wallet; // forward declaration
+struct Wallet; // forward declaration
 }
 
 
