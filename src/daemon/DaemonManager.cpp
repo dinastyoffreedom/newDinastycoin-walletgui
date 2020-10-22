@@ -172,7 +172,7 @@ bool DaemonManager::stop(NetworkType::Type nettype)
 bool DaemonManager::startWatcher(NetworkType::Type nettype) const
 {
     // Check if daemon is started every 2 seconds
-    QTime timer;
+    QElapsedTimer timer;
     timer.restart();
     while(true && !m_app_exit && timer.elapsed() / 1000 < DAEMON_START_TIMEOUT_SECONDS  ) {
         QThread::sleep(2);
