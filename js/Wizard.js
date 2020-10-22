@@ -174,12 +174,12 @@ function getApproximateBlockchainHeight(_date, _nettype){
         if(approxBlockchainHeight > approximateTestnetRolledBackBlocks)
             approxBlockchainHeight -= approximateTestnetRolledBackBlocks
     }
-
-    var blocksPerMonth = 60*60*24*30/secondsPerBlock;
-    if(approxBlockchainHeight - blocksPerMonth > 0){
-        return approxBlockchainHeight - blocksPerMonth;
-    }
-    else{
-        return 0;
-    }
+    return 0;
+    // var blocksPerMonth = 60*60*24*30/secondsPerBlock;
+    // if(approxBlockchainHeight - blocksPerMonth > 0){
+    //     return approxBlockchainHeight - blocksPerMonth;
+    // }
+    // else{
+    //     return 0;
+    // }
 }
