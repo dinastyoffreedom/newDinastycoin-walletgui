@@ -6,7 +6,7 @@ lessThan (QT_MAJOR_VERSION, 5) | lessThan (QT_MINOR_VERSION, 9) {
 TEMPLATE = app
 
 QT += svg qml gui-private quick widgets
-
+QTPLUGIN += qsvg qsvgicon
 WALLET_ROOT=$$PWD/dinastycoin
 
 CONFIG += c++11 link_pkgconfig
@@ -43,7 +43,11 @@ INCLUDEPATH +=  $$WALLET_ROOT/include \
                 $$PWD/src/libwalletqt \
                 $$PWD/src/QR-Code-generator \
                 $$PWD/src \
-                $$WALLET_ROOT/src
+                $$WALLET_ROOT/src \
+                /usr/local/boost_1_70_0 \
+                /usr/local/openssl-1.1.1g/include \
+                $$WALLET_ROOT/external/easylogging++ \
+                $$WALLET_ROOT/contrib/epee/include
 
 HEADERS += \
     filter.h \
@@ -155,6 +159,8 @@ ios:arm64 {
 }
 
 LIBS_COMMON = \
+    -lgcrypt \
+    -lgpg-error \
     -lwallet_merged \
     -llmdb \
     -lepee \
@@ -176,8 +182,10 @@ android {
 
 
 
-QMAKE_CXXFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -Wformat -Wformat-security
-QMAKE_CFLAGS += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -Wformat -Wformat-security
+QMAKE_CXXFLAGS += -Werror -Wformat -Wformat-security
+QMAKE_CFLAGS += -Werror -Wformat -Wformat-security
+QMAKE_CXXFLAGS_RELEASE += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -O2
+QMAKE_CFLAGS_RELEASE += -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=1 -O2
 
 ios {
     message("Host is IOS")
@@ -221,6 +229,14 @@ CONFIG(WITH_SCANNER) {
             LIBS += -lzbarjni -liconv
         } else {
             LIBS += -lzbar
+            macx {
+                ZBAR_DIR = $$system(brew --prefix zbar, lines, EXIT_CODE)
+                equals(EXIT_CODE, 0) {
+                    INCLUDEPATH += $$ZBAR_DIR/include
+                } else {
+                    INCLUDEPATH += /usr/local/include
+                }
+            }
         }
     } else {
         message("Skipping camera scanner because of Incompatible Qt Version !")
@@ -299,7 +315,8 @@ win32 {
         -lssl \
         -lsodium \
         -lcrypto \
-        -lws2_32
+        -lws2_32 \
+        -lole32
     
     !contains(QMAKE_TARGET.arch, x86_64) {
         message("Target is 32bit")
@@ -330,7 +347,7 @@ linux {
       # On some distro's we need to add dynload
       LIBS+= -ldl
     }
-
+    LIBS+=-L/usr/local/boost_1_70_0/stage/lib
     LIBS+= \
         -lboost_serialization \
         -lboost_thread \
@@ -371,18 +388,49 @@ macx {
     #     LIBS+= -Wl,-Bstatic
     # }
 
-    OPENSSL_LIBRARY_DIRS = $$system(brew --prefix openssl, lines, EXIT_CODE)
+    OPENSSL_DIR = $$system(brew --prefix openssl, lines, EXIT_CODE)
+    !equals(EXIT_CODE, 0) {
+        OPENSSL_DIR = /usr/local/ssl
+    }
+    OPENSSL_LIBRARY_DIR = $$OPENSSL_DIR/lib
+    INCLUDEPATH += $$OPENSSL_DIR/include
+
+    BOOST_DIR = $$system(brew --prefix boost, lines, EXIT_CODE)
     equals(EXIT_CODE, 0) {
-        OPENSSL_LIBRARY_DIRS = $$OPENSSL_LIBRARY_DIRS/lib
+        INCLUDEPATH += $$BOOST_DIR/include
     } else {
-        OPENSSL_LIBRARY_DIRS = /usr/local/ssl/lib
+        INCLUDEPATH += /usr/local/include
+    }
+
+    GCRYPT_DIR = $$system(brew --prefix libgcrypt, lines, EXIT_CODE)
+    equals(EXIT_CODE, 0) {
+        INCLUDEPATH += $$GCRYPT_DIR/include
+    } else {
+        INCLUDEPATH += /usr/local/include
+    }
+
+    GPGP_ERROR_DIR = $$system(brew --prefix libgpg-error, lines, EXIT_CODE)
+    equals(EXIT_CODE, 0) {
+        INCLUDEPATH += $$GPGP_ERROR_DIR/include
+    } else {
+        INCLUDEPATH += /usr/local/include
+    }
+    
+    SODIUM_DIR = $$system(brew --prefix libsodium, lines, EXIT_CODE)
+    equals(EXIT_CODE, 0) {
+        INCLUDEPATH += $$SODIUM_DIR/include
+    } else {
+        INCLUDEPATH += /usr/local/include
     }
 
     QT += macextras
     OBJECTIVE_SOURCES += src/qt/macoshelper.mm
+    LIBS+= -Wl,-dead_strip
+    LIBS+= -Wl,-dead_strip_dylibs
+    LIBS+= -Wl,-bind_at_load
     LIBS+= \
         -L/usr/local/lib \
-        -L$$OPENSSL_LIBRARY_DIRS \
+        -L$$OPENSSL_LIBRARY_DIR \
         -L/usr/local/opt/boost/lib \
         -lboost_serialization \
         -lboost_thread-mt \
@@ -514,6 +562,7 @@ DISTFILES += \
 
 VERSION = $$cat('version.js', lines)
 VERSION = $$find(VERSION, 'GUI_VERSION')
+VERSION_LONG = $$replace(VERSION, '.*\"v(.*)\"', '\1') 
 VERSION = $$replace(VERSION, '.*(\d+\.\d+\.\d+\.\d+).*', '\1')
 
 # windows application icon
@@ -521,4 +570,7 @@ RC_ICONS = images/appicon.ico
 
 # mac Info.plist & application icon
 QMAKE_INFO_PLIST = $$PWD/share/Info.plist
+macx {
+    QMAKE_POST_LINK += sed -i "''" -e "s/@VERSION@/$$VERSION/g" -e "s/@VERSION_LONG@/$$VERSION_LONG/g" "$$sprintf("%1/%2/%3.app", $$OUT_PWD, $$DESTDIR, $$TARGET)/Contents/Info.plist";
+}
 ICON = $$PWD/images/appicon.icns
