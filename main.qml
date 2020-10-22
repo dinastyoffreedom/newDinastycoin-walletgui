@@ -411,8 +411,7 @@ ApplicationWindow {
             balance = walletManager.displayAmount(currentWallet.balance(currentWallet.currentSubaddressAccount));
             balanceU = walletManager.displayAmount(currentWallet.unlockedBalance(currentWallet.currentSubaddressAccount));
         }
-        //for test code
-        console.error("---------fiatPriceEnabled = ", persistentSettings.fiatPriceEnabled);
+
         if (persistentSettings.fiatPriceEnabled) {
 
             appWindow.fiatApiUpdateBalance(balance);
