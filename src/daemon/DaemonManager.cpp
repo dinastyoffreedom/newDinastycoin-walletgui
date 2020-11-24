@@ -41,7 +41,7 @@
 #include <QVariantMap>
 #include <QVariant>
 #include <QMap>
-
+#include <QStringList>
 namespace {
     static const int DAEMON_START_TIMEOUT_SECONDS = 120;
 }
@@ -191,6 +191,7 @@ bool DaemonManager::stopWatcher(NetworkType::Type nettype) const
 {
     // Check if daemon is running every 2 seconds. Kill if still running after 10 seconds
     int counter = 0;
+    QStringList argList;
     while(true && !m_app_exit) {
         QThread::sleep(2);
         counter++;
@@ -199,9 +200,9 @@ bool DaemonManager::stopWatcher(NetworkType::Type nettype) const
             if(counter >= 5) {
                 qDebug() << "Killing it! ";
 #ifdef Q_OS_WIN
-                QProcess::execute("taskkill /F /IM dinastycoind.exe");
+                QProcess::execute("taskkill /F /IM dinastycoind.exe", argList);
 #else
-                QProcess::execute("pkill dinastycoind");
+                QProcess::execute("pkill dinastycoind", argList);
 #endif
             }
 
