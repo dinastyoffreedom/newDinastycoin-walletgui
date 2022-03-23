@@ -90,6 +90,10 @@ Rectangle {
 
     function close() {
         root.visible = false;
+        // reset button text
+        okButton.text = qsTr("OK")
+        cancelButton.text = qsTr("Cancel")
+
         closeCallback();
     }
 
@@ -124,7 +128,10 @@ Rectangle {
             Flickable {
                 id: flickable
                 anchors.fill: parent
-                ScrollBar.vertical: ScrollBar { }
+                ScrollBar.vertical: ScrollBar {
+                    onActiveChanged: if (!active && !isMac) active = true
+                }
+                boundsBehavior: isMac ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
 
                 TextArea.flickable: TextArea {
                     id: dialogContent
@@ -164,6 +171,7 @@ Rectangle {
 
             DinastycoinComponents.StandardButton {
                 id: cancelButton
+                primary: false
                 text: qsTr("Cancel") + translationManager.emptyString
                 onClicked: {
                     root.close()

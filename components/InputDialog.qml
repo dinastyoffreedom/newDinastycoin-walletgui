@@ -45,18 +45,16 @@ Item {
     signal accepted()
     signal rejected()
 
-    function open() {
-        inactiveOverlay.visible = true
+    function open(prepopulate) {
         leftPanel.enabled = false
         middlePanel.enabled = false
         titleBar.state = "essentials"
         root.visible = true;
         input.focus = true;
-        input.text = "";
+        input.text = prepopulate ? prepopulate : "";
     }
 
     function close() {
-        inactiveOverlay.visible = false
         leftPanel.enabled = true
         middlePanel.enabled = true
         titleBar.state = "default"
@@ -110,6 +108,8 @@ Item {
                     color: DinastycoinComponents.Style.blackTheme ? "black" : "#A9FFFFFF"
                 }
 
+                Keys.enabled: root.visible
+                Keys.onEnterPressed: Keys.onReturnPressed(event)
                 Keys.onReturnPressed: {
                     root.close()
                     root.accepted()
@@ -129,6 +129,7 @@ Item {
 
                 DinastycoinComponents.StandardButton {
                     id: cancelButton
+                    primary: false
                     small: true
                     width: 120
                     fontSize: 14

@@ -1,4 +1,4 @@
-// Parts are Copyright (c) 2019, The Dinastycoin team
+// Copyright (c) 2014-2015, The Dinastycoin Project
 //
 // All rights reserved.
 //
@@ -71,9 +71,16 @@ TextArea {
 
     DinastycoinComponents.ContextMenu {
         cursorShape: Qt.IBeamCursor
+        onCut: textArea.cut();
+        onCopy: textArea.copy();
         onPaste: {
-            textArea.clear();
+            var previoustextFieldLength = textArea.length
+            var previousCursorPosition = textArea.cursorPosition;
             textArea.paste();
+            textArea.forceActiveFocus()
+            textArea.cursorPosition = previousCursorPosition + (textArea.length - previoustextFieldLength);
         }
+        onRemove: textArea.remove(selectionStart, selectionEnd);
+        onSelectAll: textArea.selectAll();
     }
 }

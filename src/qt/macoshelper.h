@@ -29,12 +29,18 @@
 #ifndef MACOSHELPER_H
 #define MACOSHELPER_H
 
+#include <QPixmap>
+
 class MacOSHelper
 {
     MacOSHelper() {}
 
 public:
     static bool isCapsLock();
+    static bool openFolderAndSelectItem(const QUrl &path);
+    static QPixmap screenshot();
+    static QString bundlePath();
+    static void disableWindowTabbing();
 };
 
 #endif //MACOSHELPER_H

@@ -61,6 +61,10 @@ function checkSignature(signature) {
         if ((signature.length - 12) % 88 != 0)
             return false;
         return check256(signature, signature.length);
+    } else if (signature.indexOf("ReserveProofV") === 0) {
+        if ((signature.length - 14) % 447 != 0)
+            return false;
+        return check256(signature, signature.length);
     }
     return false;
 }
@@ -72,15 +76,4 @@ function isValidOpenAliasAddress(address) {
         return false
     // we can get an awful lot of valid domains, including non ASCII chars... accept anything
     return true
-}
-
-function makeQRCodeString(addr, amount) {
-    var DCY_URI_SCHEME = "dinastycoin:"
-    var DCY_AMOUNT = "tx_amount"
-    var qrCodeString =""
-    qrCodeString += (DCY_URI_SCHEME + addr)
-    if (amount !== undefined && amount !== ""){
-      qrCodeString += ("?" + DCY_AMOUNT + "=" + amount)
-    }
-    return qrCodeString
 }

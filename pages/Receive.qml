@@ -50,15 +50,25 @@ Rectangle {
     color: "transparent"
     property var model
     property alias receiveHeight: mainLayout.height
+    property var state: "Address"
 
     function renameSubaddressLabel(_index){
         inputDialog.labelText = qsTr("Set the label of the selected address:") + translationManager.emptyString;
-        inputDialog.inputText = appWindow.currentWallet.getSubaddressLabel(appWindow.currentWallet.currentSubaddressAccount, _index);
         inputDialog.onAcceptedCallback = function() {
             appWindow.currentWallet.subaddress.setLabel(appWindow.currentWallet.currentSubaddressAccount, _index, inputDialog.inputText);
         }
         inputDialog.onRejectedCallback = null;
-        inputDialog.open()
+        inputDialog.open(appWindow.currentWallet.getSubaddressLabel(appWindow.currentWallet.currentSubaddressAccount, _index))
+    }
+
+    function generateQRCodeString() {
+        if (pageReceive.state == "PaymentRequest") {
+            return walletManager.make_uri(appWindow.current_address,
+                walletManager.amountFromString(amountToReceiveDCY.text),
+                txDescriptionInput.text, receiverNameInput.text);
+        } else {
+            return walletManager.make_uri(appWindow.current_address);
+        }
     }
 
     Clipboard { id: clipboard }
@@ -73,21 +83,472 @@ Rectangle {
         anchors.top: parent.top
         anchors.right: parent.right
 
-        spacing: 20
-        property int labelWidth: 120
-        property int editWidth: 400
-        property int lineEditFontSize: 12
-        property int qrCodeSize: 220
+        spacing: 15
+
+        ColumnLayout {
+            id: selectedAddressDetailsColumn
+            Layout.alignment: Qt.AlignHCenter
+            spacing: 0
+            property int qrSize: 220
+
+            DinastycoinComponents.Navbar {
+                Layout.alignment: Qt.AlignHCenter
+                Layout.bottomMargin: 10
+
+                DinastycoinComponents.NavbarItem {
+                    active: state == "Address"
+                    text: qsTr("Address") + translationManager.emptyString
+                    onSelected: state = "Address"
+                }
+
+                DinastycoinComponents.NavbarItem {
+                    active: state == "PaymentRequest"
+                    text: qsTr("Payment request") + translationManager.emptyString
+                    onSelected: {
+                        state = "PaymentRequest";
+                        qrCodeTextMouseArea.hoverEnabled = true;
+                    }
+                }
+            }
+
+            Rectangle {
+                id: qrContainer
+                color: DinastycoinComponents.Style.blackTheme ? "white" : "transparent"
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignHCenter
+                Layout.maximumWidth: parent.qrSize
+                Layout.preferredHeight: width
+                radius: 4
+
+                Image {
+                    id: qrCode
+                    anchors.fill: parent
+                    anchors.margins: 1
+                    smooth: false
+                    fillMode: Image.PreserveAspectFit
+                    source: "image://qrcode/" + generateQRCodeString();
+
+                    MouseArea {
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onEntered: qrCodeTooltip.tooltipPopup.open()
+                        onExited: qrCodeTooltip.tooltipPopup.close()
+                        onClicked: {
+                            if (mouse.button == Qt.LeftButton){
+                                walletManager.saveQrCodeToClipboard(generateQRCodeString());
+                                appWindow.showStatusMessage(qsTr("QR code copied to clipboard") + translationManager.emptyString, 3);
+                            } else if (mouse.button == Qt.RightButton){
+                                qrMenu.x = this.mouseX;
+                                qrMenu.y = this.mouseY;
+                                qrMenu.open()
+                            }
+                        }
+                    }
+                }
+
+                Menu {
+                    id: qrMenu
+                    title: "QrCode"
+                    currentIndex: menuItem1.hovered ? 0 : menuItem2.hovered ? 1 : -1
+
+                    MenuItem {
+                        id: menuItem1
+                        text: qsTr("Copy to clipboard") + translationManager.emptyString;
+                        onTriggered: walletManager.saveQrCodeToClipboard(generateQRCodeString())
+                    }
+
+                    MenuItem {
+                        id: menuItem2
+                        text: qsTr("Save as Image") + translationManager.emptyString;
+                        onTriggered: qrFileDialog.open()
+                    }
+                }
+
+                DinastycoinComponents.Tooltip {
+                    id: qrCodeTooltip
+                    text: qsTr("Left click: copy QR code to clipboard") + "<br>" +  qsTr("Right click: save QR code as image file") + translationManager.emptyString
+                }
+            }
+
+            DinastycoinComponents.TextPlain {
+                id: qrCodeText
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 6
+                Layout.maximumWidth: 285
+                Layout.minimumHeight: 75
+                verticalAlignment: Text.AlignVCenter
+                visible: paymentRequestGridLayout.visible
+                font.pixelSize: 12
+                color: qrCodeTextMouseArea.containsMouse ? DinastycoinComponents.Style.orange : DinastycoinComponents.Style.defaultFontColor
+                text: generateQRCodeString();
+                wrapMode: Text.WrapAnywhere
+                tooltip: qsTr("Copy payment request to clipboard") + translationManager.emptyString
+                themeTransition: false
+
+                MouseArea {
+                    id: qrCodeTextMouseArea
+                    hoverEnabled: false //true when Payment request navbar button is clicked (fix bug displaying tooltip when navbar button is clicked)
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onEntered: parent.tooltipPopup.open()
+                    onExited: parent.tooltipPopup.close()
+                    onClicked: {
+                        clipboard.setText(qrCodeText.text);
+                        appWindow.showStatusMessage(qsTr("Payment request copied to clipboard") + translationManager.emptyString, 3);
+                    }
+                }
+            }
+
+            GridLayout {
+                id: paymentRequestGridLayout
+                columns: 3
+                rows: 4
+                visible: pageReceive.state == "PaymentRequest"
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 6
+                Layout.preferredWidth: 285
+                Layout.maximumWidth: 285
+
+                DinastycoinComponents.Label {
+                    id: amountTitleFiat
+                    Layout.bottomMargin: 3
+                    Layout.preferredWidth: 90
+                    visible: persistentSettings.fiatPriceEnabled
+                    fontSize: 14
+                    text: qsTr("Amount") + translationManager.emptyString
+                }
+
+                DinastycoinComponents.Input {
+                    id: amountToReceiveFiat
+                    Layout.preferredWidth: 165
+                    Layout.maximumWidth: 165
+                    visible: persistentSettings.fiatPriceEnabled
+                    topPadding: 5
+                    leftPadding: 5
+                    font.family: DinastycoinComponents.Style.fontMonoRegular.name
+                    font.pixelSize: 14
+                    font.bold: false
+                    horizontalAlignment: TextInput.AlignLeft
+                    verticalAlignment: TextInput.AlignVCenter
+                    selectByMouse: true
+                    color: DinastycoinComponents.Style.defaultFontColor
+                    placeholderText: "0.00"
+
+                    background: Rectangle {
+                        color: DinastycoinComponents.Style.blackTheme ? "transparent" : "white"
+                        radius: 3
+                        border.color: parent.activeFocus ? DinastycoinComponents.Style.inputBorderColorActive : DinastycoinComponents.Style.inputBorderColorInActive
+                        border.width: 1
+                    }
+                    onTextEdited: {
+                        text = text.trim().replace(",", ".");
+                        const match = text.match(/^0+(\d.*)/);
+                        if (match) {
+                            const cursorPosition = cursorPosition;
+                            text = match[1];
+                            cursorPosition = Math.max(cursorPosition, 1) - 1;
+                        } else if(text.indexOf('.') === 0){
+                            text = '0' + text;
+                            if (text.length > 2) {
+                                cursorPosition = 1;
+                            }
+                        }
+                        if (amountToReceiveFiat.text == "") {
+                            amountToReceiveDCY.text = "";
+                        } else {
+                            amountToReceiveDCY.text = fiatApiConvertToDCY(amountToReceiveFiat.text);
+                        }
+                    }
+                    validator: RegExpValidator {
+                        regExp: /^\s*(\d{1,8})?([\.,]\d{1,2})?\s*$/
+                    }
+                }
+
+                DinastycoinComponents.Label {
+                    Layout.bottomMargin: 3
+                    visible: persistentSettings.fiatPriceEnabled
+                    fontSize: 14
+                    text: appWindow.fiatApiCurrencySymbol();
+                }
+
+                DinastycoinComponents.Label {
+                    id: amountTitleDCY
+                    Layout.bottomMargin: 3
+                    Layout.preferredWidth: 90
+                    fontSize: 14
+                    text: persistentSettings.fiatPriceEnabled ? "" : qsTr("Amount") + translationManager.emptyString
+                }
+
+                DinastycoinComponents.Input {
+                    id: amountToReceiveDCY
+                    Layout.preferredWidth: 165
+                    Layout.maximumWidth: 165
+                    topPadding: 5
+                    leftPadding: 5
+                    font.family: DinastycoinComponents.Style.fontMonoRegular.name
+                    font.pixelSize: 14
+                    font.bold: false
+                    horizontalAlignment: TextInput.AlignLeft
+                    verticalAlignment: TextInput.AlignVCenter
+                    selectByMouse: true
+                    color: DinastycoinComponents.Style.defaultFontColor
+                    placeholderText: "0.000000000000"
+
+                    background: Rectangle {
+                        color: DinastycoinComponents.Style.blackTheme ? "transparent" : "white"
+                        radius: 3
+                        border.color: parent.activeFocus ? DinastycoinComponents.Style.inputBorderColorActive : DinastycoinComponents.Style.inputBorderColorInActive
+                        border.width: 1
+                    }
+                    onTextEdited: {
+                        text = text.trim().replace(",", ".");
+                        const match = text.match(/^0+(\d.*)/);
+                        if (match) {
+                            const cursorPosition = cursorPosition;
+                            text = match[1];
+                            cursorPosition = Math.max(cursorPosition, 1) - 1;
+                        } else if(text.indexOf('.') === 0){
+                            text = '0' + text;
+                            if (text.length > 2) {
+                                cursorPosition = 1;
+                            }
+                        }
+                        if (amountToReceiveDCY.text == "") {
+                            amountToReceiveFiat.text = "";
+                        } else {
+                            amountToReceiveFiat.text = fiatApiConvertToFiat(amountToReceiveDCY.text);
+                        }
+                    }
+                    validator: RegExpValidator {
+                        regExp: /^\s*(\d{1,8})?([\.,]\d{1,12})?\s*$/
+                    }
+                }
+
+                DinastycoinComponents.Label {
+                    Layout.bottomMargin: 3
+                    fontSize: 14
+                    text: "DCY"
+                }
+
+                DinastycoinComponents.Label {
+                    id: txDescription
+                    Layout.bottomMargin: 3
+                    Layout.preferredWidth: 90
+                    fontSize: 14
+                    text: qsTr("Description") + translationManager.emptyString
+                    tooltip: qsTr("What is being payed for (a product, service, donation) (optional)") + translationManager.emptyString
+                    tooltipIconVisible: true
+                }
+
+                DinastycoinComponents.Input {
+                    id: txDescriptionInput
+                    Layout.preferredWidth: 165
+                    Layout.maximumWidth: 165
+                    maximumLength: 800
+                    topPadding: 7
+                    leftPadding: 7
+                    font.pixelSize: 14
+                    font.bold: false
+                    horizontalAlignment: TextInput.AlignLeft
+                    verticalAlignment: TextInput.AlignVCenter
+                    selectByMouse: true
+                    color: DinastycoinComponents.Style.defaultFontColor
+                    placeholderText: qsTr("Visible to the sender") + translationManager.emptyString
+
+                    background: Rectangle {
+                        color: DinastycoinComponents.Style.blackTheme ? "transparent" : "white"
+                        radius: 3
+                        border.color: parent.activeFocus ? DinastycoinComponents.Style.inputBorderColorActive : DinastycoinComponents.Style.inputBorderColorInActive
+                        border.width: 1
+                    }
+                }
+
+                DinastycoinComponents.Label {
+                    Layout.bottomMargin: 3
+                    fontSize: 14
+                    text: ""
+                }
+
+                DinastycoinComponents.Label {
+                    id: receiverNameLabel
+                    Layout.bottomMargin: 3
+                    Layout.preferredWidth: 90
+                    fontSize: 14
+                    text: qsTr("Your name") + translationManager.emptyString
+                    tooltip: qsTr("Your name, company or website (optional)") + translationManager.emptyString
+                    tooltipIconVisible: true
+                }
+
+                DinastycoinComponents.Input {
+                    id: receiverNameInput
+                    Layout.preferredWidth: 165
+                    Layout.maximumWidth: 165
+                    topPadding: 7
+                    leftPadding: 7
+                    font.pixelSize: 14
+                    font.bold: false
+                    horizontalAlignment: TextInput.AlignLeft
+                    verticalAlignment: TextInput.AlignVCenter
+                    selectByMouse: true
+                    color: DinastycoinComponents.Style.defaultFontColor
+                    placeholderText: qsTr("Visible to the sender") + translationManager.emptyString
+                    maximumLength: 100
+
+                    background: Rectangle {
+                        color: DinastycoinComponents.Style.blackTheme ? "transparent" : "white"
+                        radius: 3
+                        border.color: parent.activeFocus ? DinastycoinComponents.Style.inputBorderColorActive : DinastycoinComponents.Style.inputBorderColorInActive
+                        border.width: 1
+                    }
+                }
+
+                DinastycoinComponents.Label {
+                    Layout.bottomMargin: 3
+                    fontSize: 14
+                    text: ""
+                }
+            }
+
+            DinastycoinComponents.TextPlain {
+                id: selectedaddressIndex
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: 220
+                Layout.maximumWidth: 220
+                Layout.topMargin: 15
+                visible: pageReceive.state == "Address"
+                horizontalAlignment: Text.AlignHCenter
+                text: qsTr("Address #") + subaddressListView.currentIndex + translationManager.emptyString
+                wrapMode: Text.WordWrap
+                font.family: DinastycoinComponents.Style.fontRegular.name
+                font.pixelSize: 17
+                textFormat: Text.RichText
+                color: DinastycoinComponents.Style.defaultFontColor
+                themeTransition: false
+            }
+
+            DinastycoinComponents.TextPlain {
+                id: selectedAddressDrescription
+                Layout.alignment: Qt.AlignHCenter
+                Layout.preferredWidth: 220
+                Layout.maximumWidth: 220
+                Layout.topMargin: 10
+                visible: pageReceive.state == "Address"
+                horizontalAlignment: Text.AlignHCenter
+                text: "(" + qsTr("no label") + ")" + translationManager.emptyString
+                wrapMode: Text.WordWrap
+                font.family: DinastycoinComponents.Style.fontRegular.name
+                font.pixelSize: 17
+                textFormat: Text.RichText
+                color: selectedAddressDrescriptionMouseArea.containsMouse ? DinastycoinComponents.Style.orange : DinastycoinComponents.Style.dimmedFontColor
+                themeTransition: false
+                tooltip: subaddressListView.currentIndex > 0 ? qsTr("Edit address label") : "" + translationManager.emptyString
+                MouseArea {
+                    id: selectedAddressDrescriptionMouseArea
+                    visible: subaddressListView.currentIndex > 0
+                    hoverEnabled: true
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onEntered: parent.tooltip ? parent.tooltipPopup.open() : ""
+                    onExited: parent.tooltip ? parent.tooltipPopup.close() : ""
+                    onClicked: {
+                        renameSubaddressLabel(appWindow.current_subaddress_table_index);
+                    }
+                }
+            }
+
+            DinastycoinComponents.TextPlain {
+                id: selectedAddress
+                Layout.alignment: Qt.AlignHCenter
+                Layout.maximumWidth: 300
+                Layout.topMargin: 11
+                visible: pageReceive.state == "Address"
+                text: appWindow.current_address ? appWindow.current_address : ""
+                horizontalAlignment: TextInput.AlignHCenter
+                wrapMode: Text.Wrap
+                textFormat: Text.RichText
+                color: selectedAddressMouseArea.containsMouse ? DinastycoinComponents.Style.orange : DinastycoinComponents.Style.defaultFontColor
+                font.pixelSize: 15
+                font.family: DinastycoinComponents.Style.fontRegular.name
+                themeTransition: false
+                tooltip: qsTr("Copy address to clipboard") + translationManager.emptyString
+                MouseArea {
+                    id: selectedAddressMouseArea
+                    hoverEnabled: true
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    onEntered: parent.tooltip ? parent.tooltipPopup.open() : ""
+                    onExited: parent.tooltip ? parent.tooltipPopup.close() : ""
+                    onClicked: {
+                        clipboard.setText(appWindow.current_address);
+                        appWindow.showStatusMessage(qsTr("Address copied to clipboard") + translationManager.emptyString, 3);
+                    }
+                }
+            }
+
+            DinastycoinComponents.StandardButton {
+                Layout.preferredWidth: 220
+                Layout.alignment: Qt.AlignHCenter
+                Layout.topMargin: 18
+                small: true
+                text: qsTr("Show on device") + translationManager.emptyString
+                fontSize: 14
+                visible: appWindow.currentWallet ? appWindow.currentWallet.isHwBacked() : false
+                onClicked: {
+                    appWindow.currentWallet.deviceShowAddressAsync(
+                        appWindow.currentWallet.currentSubaddressAccount,
+                        appWindow.current_subaddress_table_index,
+                        '');
+                }
+            }
+        }
 
         ColumnLayout {
             id: addressRow
             spacing: 0
 
-            DinastycoinComponents.LabelSubheader {
-                Layout.fillWidth: true
-                fontSize: 24
-                textFormat: Text.RichText
-                text: qsTr("Addresses") + translationManager.emptyString
+            RowLayout {
+                spacing: 0
+
+                DinastycoinComponents.LabelSubheader {
+                    Layout.fillWidth: true
+                    fontSize: 24
+                    textFormat: Text.RichText
+                    text: qsTr("Addresses") + translationManager.emptyString
+                }
+
+                DinastycoinComponents.StandardButton {
+                    id: createAddressButton
+                    small: true
+                    text: qsTr("Create new address") + translationManager.emptyString
+                    fontSize: 13
+                    onClicked: {
+                        inputDialog.labelText = qsTr("Set the label of the new address:") + translationManager.emptyString
+                        inputDialog.onAcceptedCallback = function() {
+                            appWindow.currentWallet.subaddress.addRow(appWindow.currentWallet.currentSubaddressAccount, inputDialog.inputText)
+                            current_subaddress_table_index = appWindow.currentWallet.numSubaddresses(appWindow.currentWallet.currentSubaddressAccount) - 1
+                            subaddressListView.currentIndex = current_subaddress_table_index
+                        }
+                        inputDialog.onRejectedCallback = null;
+                        inputDialog.open()
+                    }
+
+                    Rectangle {
+                        anchors.top: createAddressButton.bottom
+                        anchors.topMargin: 8
+                        anchors.left: createAddressButton.left
+                        anchors.right: createAddressButton.right
+                        height: 2
+                        color: DinastycoinComponents.Style.appWindowBorderColor
+
+                        DinastycoinEffects.ColorTransition {
+                            targetObj: parent
+                            blackColor: DinastycoinComponents.Style._b_appWindowBorderColor
+                            whiteColor: DinastycoinComponents.Style._w_appWindowBorderColor
+                        }
+                    }
+                }
             }
 
             ColumnLayout {
@@ -110,9 +571,18 @@ Rectangle {
                     delegate: Rectangle {
                         id: tableItem2
                         height: subaddressListRow.subaddressListItemHeight
-                        width: parent.width
+                        width: parent ? parent.width : undefined
                         Layout.fillWidth: true
-                        color: "transparent"
+                        color: itemMouseArea.containsMouse || index === appWindow.current_subaddress_table_index ? DinastycoinComponents.Style.titleBarButtonHoverColor : "transparent"
+
+                        Rectangle {
+                            visible: index === appWindow.current_subaddress_table_index
+                            Layout.fillHeight: true
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            color: "darkgrey"
+                            width: 2
+                        }
 
                         Rectangle{
                             anchors.right: parent.right
@@ -132,7 +602,7 @@ Rectangle {
                         Rectangle {
                             anchors.fill: parent
                             anchors.topMargin: 5
-                            anchors.rightMargin: 80
+                            anchors.rightMargin: 90
                             color: "transparent"
 
                             DinastycoinComponents.Label {
@@ -148,7 +618,7 @@ Rectangle {
 
                             DinastycoinComponents.Label {
                                 id: nameLabel
-                                color: DinastycoinComponents.Style.dimmedFontColor
+                                color: index === appWindow.current_subaddress_table_index ? DinastycoinComponents.Style.defaultFontColor : DinastycoinComponents.Style.dimmedFontColor
                                 anchors.verticalCenter: parent.verticalCenter
                                 anchors.left: idLabel.right
                                 anchors.leftMargin: 6
@@ -172,11 +642,10 @@ Rectangle {
                             }
 
                             MouseArea {
+                                id: itemMouseArea
                                 cursorShape: Qt.PointingHandCursor
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onEntered: tableItem2.color = DinastycoinComponents.Style.titleBarButtonHoverColor
-                                onExited: tableItem2.color = "transparent"
                                 onClicked: subaddressListView.currentIndex = index;
                             }
                         }
@@ -189,13 +658,29 @@ Rectangle {
                             spacing: 10
 
                             DinastycoinComponents.IconButton {
+                                fontAwesomeFallbackIcon: FontAwesome.searchPlus
+                                fontAwesomeFallbackSize: 22
+                                color: DinastycoinComponents.Style.defaultFontColor
+                                fontAwesomeFallbackOpacity: 0.5
+                                Layout.preferredWidth: 23
+                                Layout.preferredHeight: 21
+                                tooltip: qsTr("See transactions") + translationManager.emptyString
+
+                                onClicked: doSearchInHistory(address)
+                            }
+
+                            DinastycoinComponents.IconButton {
                                 id: renameButton
                                 image: "qrc:///images/edit.svg"
+                                fontAwesomeFallbackIcon: FontAwesome.edit
+                                fontAwesomeFallbackSize: 22
                                 color: DinastycoinComponents.Style.defaultFontColor
-                                opacity: 0.5
+                                opacity: isOpenGL ? 0.5 : 1
+                                fontAwesomeFallbackOpacity: 0.5
                                 Layout.preferredWidth: 23
                                 Layout.preferredHeight: 21
                                 visible: index !== 0
+                                tooltip: qsTr("Edit address label") + translationManager.emptyString
 
                                 onClicked: {
                                     renameSubaddressLabel(index);
@@ -205,10 +690,14 @@ Rectangle {
                             DinastycoinComponents.IconButton {
                                 id: copyButton
                                 image: "qrc:///images/copy.svg"
+                                fontAwesomeFallbackIcon: FontAwesome.clipboard
+                                fontAwesomeFallbackSize: 22
                                 color: DinastycoinComponents.Style.defaultFontColor
-                                opacity: 0.5
+                                opacity: isOpenGL ? 0.5 : 1
+                                fontAwesomeFallbackOpacity: 0.5
                                 Layout.preferredWidth: 16
                                 Layout.preferredHeight: 21
+                                tooltip: qsTr("Copy address to clipboard") + translationManager.emptyString
 
                                 onClicked: {
                                     console.log("Address copied to clipboard");
@@ -225,6 +714,16 @@ Rectangle {
                             appWindow.currentWallet.currentSubaddressAccount,
                             subaddressListView.currentIndex
                         );
+                        if (subaddressListView.currentIndex == 0) {
+                            selectedAddressDrescription.text = qsTr("Primary address") + translationManager.emptyString;
+                        } else {
+                            var selectedAddressLabel = appWindow.currentWallet.getSubaddressLabel(appWindow.currentWallet.currentSubaddressAccount, appWindow.current_subaddress_table_index);
+                            if (selectedAddressLabel == "") {
+                                selectedAddressDrescription.text = "(" + qsTr("no label") + ")" + translationManager.emptyString
+                            } else {
+                                selectedAddressDrescription.text = selectedAddressLabel
+                            }
+                        }
                     }
                 }
             }
@@ -238,93 +737,6 @@ Rectangle {
                     targetObj: parent
                     blackColor: DinastycoinComponents.Style._b_appWindowBorderColor
                     whiteColor: DinastycoinComponents.Style._w_appWindowBorderColor
-                }
-            }
-
-            DinastycoinComponents.CheckBox {
-                id: addNewAddressCheckbox
-                border: false
-                uncheckedIcon: FontAwesome.plusCircle
-                toggleOnClick: false
-                fontAwesomeIcons: true
-                fontSize: 16
-                iconOnTheLeft: true
-                Layout.fillWidth: true
-                width: 600
-                Layout.topMargin: 10
-                text: qsTr("Create new address") + translationManager.emptyString;
-                onClicked: {
-                    inputDialog.labelText = qsTr("Set the label of the new address:") + translationManager.emptyString
-                    inputDialog.inputText = qsTr("(Untitled)") + translationManager.emptyString
-                    inputDialog.onAcceptedCallback = function() {
-                        appWindow.currentWallet.subaddress.addRow(appWindow.currentWallet.currentSubaddressAccount, inputDialog.inputText)
-                        current_subaddress_table_index = appWindow.currentWallet.numSubaddresses(appWindow.currentWallet.currentSubaddressAccount) - 1
-                        subaddressListView.currentIndex = current_subaddress_table_index
-                    }
-                    inputDialog.onRejectedCallback = null;
-                    inputDialog.open()
-                }
-            }
-        }
-
-        ColumnLayout {
-            Layout.alignment: Qt.AlignHCenter
-            spacing: 11
-            property int qrSize: 220
-
-            Rectangle {
-                id: qrContainer
-                color: DinastycoinComponents.Style.blackTheme ? "white" : "transparent"
-                Layout.fillWidth: true
-                Layout.maximumWidth: parent.qrSize
-                Layout.preferredHeight: width
-                radius: 4
-
-                Image {
-                    id: qrCode
-                    anchors.fill: parent
-                    anchors.margins: 1
-
-                    smooth: false
-                    fillMode: Image.PreserveAspectFit
-                    source: "image://qrcode/" + TxUtils.makeQRCodeString(appWindow.current_address)
-
-                    MouseArea {
-                        anchors.fill: parent
-                        acceptedButtons: Qt.RightButton
-                        onPressAndHold: qrFileDialog.open()
-                    }
-                }
-            }
-
-            RowLayout {
-                spacing: parent.spacing
-
-                DinastycoinComponents.StandardButton {
-                    rightIcon: "qrc:///images/download-white.png"
-                    onClicked: qrFileDialog.open()
-                }
-
-                DinastycoinComponents.StandardButton {
-                    rightIcon: "qrc:///images/external-link-white.png"
-                    onClicked: {
-                        clipboard.setText(TxUtils.makeQRCodeString(appWindow.current_address));
-                        appWindow.showStatusMessage(qsTr("Copied to clipboard") + translationManager.emptyString, 3);
-                    }
-                }
-
-                DinastycoinComponents.StandardButton {
-                    text: FontAwesome.eye
-                    label.font.family: FontAwesome.fontFamily
-                    fontSize: 24
-                    width: 36
-                    visible: appWindow.currentWallet ? appWindow.currentWallet.isHwBacked() : false
-                    onClicked: {
-                        appWindow.currentWallet.deviceShowAddressAsync(
-                            appWindow.currentWallet.currentSubaddressAccount,
-                            appWindow.current_subaddress_table_index,
-                            '');
-                    }
                 }
             }
         }
@@ -341,12 +753,14 @@ Rectangle {
             selectExisting: false
             nameFilters: ["Image (*.png)"]
             onAccepted: {
-                if(!walletManager.saveQrCode(TxUtils.makeQRCodeString(appWindow.current_address), walletManager.urlToLocalPath(fileUrl))) {
+                if(!walletManager.saveQrCode(generateQRCodeString(), walletManager.urlToLocalPath(fileUrl))) {
                     console.log("Failed to save QrCode to file " + walletManager.urlToLocalPath(fileUrl) )
                     receivePageDialog.title = qsTr("Save QrCode") + translationManager.emptyString;
                     receivePageDialog.text = qsTr("Failed to save QrCode to ") + walletManager.urlToLocalPath(fileUrl) + translationManager.emptyString;
                     receivePageDialog.icon = StandardIcon.Error
                     receivePageDialog.open()
+                } else {
+                    appWindow.showStatusMessage(qsTr("QR code saved to ") + walletManager.urlToLocalPath(fileUrl) + translationManager.emptyString, 3);
                 }
             }
         }
@@ -354,16 +768,23 @@ Rectangle {
 
     function onPageCompleted() {
         console.log("Receive page loaded");
+        pageReceive.clearFields();
         subaddressListView.model = appWindow.currentWallet.subaddressModel;
 
         if (appWindow.currentWallet) {
             appWindow.current_address = appWindow.currentWallet.address(appWindow.currentWallet.currentSubaddressAccount, 0)
             appWindow.currentWallet.subaddress.refresh(appWindow.currentWallet.currentSubaddressAccount)
+            if (subaddressListView.currentIndex == -1) {
+                subaddressListView.currentIndex = 0;
+            }
         }
     }
 
     function clearFields() {
-        // @TODO: add fields
+        amountToReceiveFiat.text = "";
+        amountToReceiveDCY.text = "";
+        txDescriptionInput.text = "";
+        receiverNameInput.text = "";
     }
 
     function onPageClosed() {

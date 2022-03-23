@@ -58,11 +58,6 @@ function switchPage(next) {
 }
 
 function createWalletPath(isIOS, folder_path,account_name){
-    // Remove trailing slash - (default on windows and mac)
-    if (folder_path.substring(folder_path.length -1) === "/"){
-        folder_path = folder_path.substring(0,folder_path.length -1)
-    }
-
     // Store releative path on ios.
     if(isIOS)
         folder_path = "";
@@ -70,24 +65,32 @@ function createWalletPath(isIOS, folder_path,account_name){
     return folder_path + "/" + account_name + "/" + account_name
 }
 
-function walletPathExists(directory, filename, isIOS, walletManager) {
+function walletPathExists(accountsDir, directory, filename, isIOS, walletManager) {
     if(!filename || filename === "") return false;
     if(!directory || directory === "") return false;
 
-    // make sure directory endswith path seperator
-    // @TODO: use .endswith() after Qt 5.8
-    var trailing_path_sep = directory[directory.length-1];
-    if(trailing_path_sep !== "/" && trailing_path_sep !== "\\")
+    if (!directory.endsWith("/") && !directory.endsWith("\\"))
         directory += "/"
 
     if(isIOS)
-        var path = dinastycoinAccountsDir + filename;
+        var path = accountsDir + filename;
     else
         var path = directory + filename + "/" + filename;
 
     if (walletManager.walletExists(path))
         return true;
     return false;
+}
+
+function unusedWalletName(directory, filename, walletManager) {
+    for (var i = 0; i < 100; i++) {
+        var walletName = filename + (i > 0 ? "_" + i : "");
+        if (!walletManager.walletExists(directory + "/" + walletName + "/" + walletName)) {
+            return walletName;
+        }
+    }
+
+    return filename;
 }
 
 function isAscii(str){
@@ -102,10 +105,6 @@ function tr(text) {
     return qsTr(text) + translationManager.emptyString
 }
 
-function lineBreaksToSpaces(text) {
-    return text.trim().replace(/(\r\n|\n|\r)/gm, " ");
-}
-
 function usefulName(path) {
     // arbitrary "short enough" limit
     if (path.length < 32)
@@ -115,7 +114,7 @@ function usefulName(path) {
 
 function checkSeed(seed) {
     console.log("Checking seed")
-    var wordsArray = lineBreaksToSpaces(seed).split(" ");
+    var wordsArray = seed.split(/\s+/);
     return wordsArray.length === 25 || wordsArray.length === 24
 }
 

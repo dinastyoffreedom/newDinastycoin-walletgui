@@ -36,21 +36,25 @@
 #include <QMutex>
 #include <QPointer>
 #include <QWaitCondition>
-#include <QMutex>
 #include "qt/FutureScheduler.h"
 #include "NetworkType.h"
+#include "PassphraseHelper.h"
 
 class Wallet;
 namespace Dinastycoin {
 struct WalletManager;
 }
 
-class WalletManager : public QObject
+class WalletManager : public QObject, public PassprasePrompter
 {
     Q_OBJECT
     Q_PROPERTY(bool connected READ connected)
+    Q_PROPERTY(QString proxyAddress READ proxyAddress WRITE setProxyAddress NOTIFY proxyAddressChanged)
 
 public:
+    explicit WalletManager(QObject *parent = 0);
+    ~WalletManager();
+
     enum LogLevel {
         LogLevel_Silent = Dinastycoin::WalletManagerFactory::LogLevel_Silent,
         LogLevel_0 = Dinastycoin::WalletManagerFactory::LogLevel_0,
@@ -62,7 +66,6 @@ public:
         LogLevel_Max = Dinastycoin::WalletManagerFactory::LogLevel_Max,
     };
 
-    static WalletManager * instance();
     // wizard: createWallet path;
     Q_INVOKABLE Wallet * createWallet(const QString &path, const QString &password,
                                       const QString &language, NetworkType::Type nettype = NetworkType::MAINNET, quint64 kdfRounds = 1);
@@ -83,7 +86,7 @@ public:
     Q_INVOKABLE void openWalletAsync(const QString &path, const QString &password, NetworkType::Type nettype = NetworkType::MAINNET, quint64 kdfRounds = 1);
 
     // wizard: recoveryWallet path; hint: internally it recorvers wallet and set password = ""
-    Q_INVOKABLE Wallet * recoveryWallet(const QString &path, const QString &memo,
+    Q_INVOKABLE Wallet * recoveryWallet(const QString &path, const QString &seed, const QString &seed_offset,
                                        NetworkType::Type nettype = NetworkType::MAINNET, quint64 restoreHeight = 0, quint64 kdfRounds = 1);
 
     Q_INVOKABLE Wallet * createWalletFromKeys(const QString &path,
@@ -100,14 +103,16 @@ public:
                                                 NetworkType::Type nettype,
                                                 const QString &deviceName,
                                                 quint64 restoreHeight = 0,
-                                                const QString &subaddressLookahead = "");
+                                                const QString &subaddressLookahead = "",
+                                                quint64 kdfRounds = 1);
 
     Q_INVOKABLE void createWalletFromDeviceAsync(const QString &path,
                                                 const QString &password,
                                                 NetworkType::Type nettype,
                                                 const QString &deviceName,
                                                 quint64 restoreHeight = 0,
-                                                const QString &subaddressLookahead = "");
+                                                const QString &subaddressLookahead = "",
+                                                quint64 kdfRounds = 1);
     /*!
      * \brief closeWallet - closes current open wallet and frees memory
      * \return wallet address
@@ -129,13 +134,14 @@ public:
     Q_INVOKABLE QString errorString() const;
 
     //! since we can't call static method from QML, move it to this class
-    Q_INVOKABLE QString displayAmount(quint64 amount) const;
-    Q_INVOKABLE quint64 amountFromString(const QString &amount) const;
+    Q_INVOKABLE static QString displayAmount(quint64 amount);
+    Q_INVOKABLE static quint64 amountFromString(const QString &amount);
     Q_INVOKABLE quint64 amountFromDouble(double amount) const;
-    Q_INVOKABLE quint64 maximumAllowedAmount() const;
+    Q_INVOKABLE static QString amountsSumFromStrings(const QVector<QString> &amounts);
+    Q_INVOKABLE static quint64 maximumAllowedAmount();
 
     // QML JS engine doesn't support unsigned integers
-    Q_INVOKABLE QString maximumAllowedAmountAsSting() const;
+    Q_INVOKABLE QString maximumAllowedAmountAsString() const;
 
     Q_INVOKABLE bool paymentIdValid(const QString &payment_id) const;
     Q_INVOKABLE bool addressValid(const QString &address, NetworkType::Type nettype) const;
@@ -168,39 +174,49 @@ public:
     Q_INVOKABLE qint64 addi(qint64 x, qint64 y) const { return x + y; }
     Q_INVOKABLE qint64 subi(qint64 x, qint64 y) const { return x - y; }
 
-#ifndef DISABLE_PASS_STRENGTH_METER
     Q_INVOKABLE double getPasswordStrength(const QString &password) const;
-#endif
 
     Q_INVOKABLE QString resolveOpenAlias(const QString &address) const;
     Q_INVOKABLE bool parse_uri(const QString &uri, QString &address, QString &payment_id, uint64_t &amount, QString &tx_description, QString &recipient_name, QVector<QString> &unknown_parameters, QString &error) const;
     Q_INVOKABLE QVariantMap parse_uri_to_object(const QString &uri) const;
+    Q_INVOKABLE QString make_uri(const QString &address, const quint64 &amount = 0, const QString &tx_description = "", const QString &recipient_name = "") const;
     Q_INVOKABLE bool saveQrCode(const QString &, const QString &) const;
-    Q_INVOKABLE void checkUpdatesAsync(const QString &software, const QString &subdir);
+    Q_INVOKABLE void saveQrCodeToClipboard(const QString &) const;
+    Q_INVOKABLE void checkUpdatesAsync(
+        const QString &software,
+        const QString &subdir,
+        const QString &buildTag,
+        const QString &version);
     Q_INVOKABLE QString checkUpdates(const QString &software, const QString &subdir) const;
 
     // clear/rename wallet cache
     Q_INVOKABLE bool clearWalletCache(const QString &fileName) const;
 
-    Q_INVOKABLE void onWalletPassphraseNeeded(Dinastycoin::Wallet * wallet);
-    Q_INVOKABLE void onPassphraseEntered(const QString &passphrase, bool entry_abort=false);
+    Q_INVOKABLE void onPassphraseEntered(const QString &passphrase, bool enter_on_device, bool entry_abort=false);
+    virtual void onWalletPassphraseNeeded(bool on_device) override;
+
+    QString proxyAddress() const;
+    void setProxyAddress(QString address);
 
 signals:
 
     void walletOpened(Wallet * wallet);
     void walletCreated(Wallet * wallet);
-    void walletPassphraseNeeded();
+    void walletPassphraseNeeded(bool onDevice);
     void deviceButtonRequest(quint64 buttonCode);
     void deviceButtonPressed();
-    void checkUpdatesComplete(const QString &result) const;
+    void checkUpdatesComplete(
+        const QString &version,
+        const QString &downloadUrl,
+        const QString &hash,
+        const QString &firstSigner,
+        const QString &secondSigner) const;
     void miningStatus(bool isMining) const;
+    void proxyAddressChanged() const;
 
 public slots:
 private:
     friend class WalletPassphraseListenerImpl;
-
-    explicit WalletManager(QObject *parent = 0);
-    ~WalletManager();
 
     bool isMining() const;
 
@@ -208,12 +224,10 @@ private:
     Dinastycoin::WalletManager * m_pimpl;
     mutable QMutex m_mutex;
     QPointer<Wallet> m_currentWallet;
-
-    QWaitCondition m_cond_pass;
-    QMutex m_mutex_pass;
-    QString m_passphrase;
-    bool m_passphrase_abort;
-
+    PassphraseReceiver * m_passphraseReceiver;
+    QMutex m_mutex_passphraseReceiver;
+    QString m_proxyAddress;
+    mutable QMutex m_proxyMutex;
     FutureScheduler m_scheduler;
 };
 

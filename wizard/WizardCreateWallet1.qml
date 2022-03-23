@@ -60,7 +60,12 @@ Rectangle {
             spacing: 20
 
             WizardHeader {
-                title: qsTr("Create a new wallet") + translationManager.emptyString
+                title: {
+                    var nettype = persistentSettings.nettype;
+                    return qsTr("Create a new wallet") + (nettype === 2 ? " (" + qsTr("stagenet") + ")"
+                                                                        : nettype === 1 ? " (" + qsTr("testnet") + ")"
+                                                                                        : "") + translationManager.emptyString
+                }
                 subtitle: qsTr("Creates a new wallet on this computer.") + translationManager.emptyString
             }
 
@@ -71,7 +76,7 @@ Rectangle {
             ColumnLayout {
                 spacing: 0
 
-                Layout.topMargin: 10
+                Layout.topMargin: -10
                 Layout.fillWidth: true
 
                 DinastycoinComponents.LineEditMulti {
@@ -152,7 +157,7 @@ Rectangle {
                     labelText: qsTr("Wallet restore height") + translationManager.emptyString
                     labelFontSize: 14
                     copyButton: false
-//                    readOnly: true
+                    readOnly: true
                     text: Utils.roundDownToNearestThousand(wizardController.m_wallet ? wizardController.m_wallet.walletCreationHeight : 0)
                 }
 
@@ -189,11 +194,13 @@ Rectangle {
             }
 
             WizardNav {
-                progressSteps: 4
-                progress: 1
+                progressSteps: appWindow.walletMode <= 1 ? 3 : 4
+                progress: 0
                 btnNext.enabled: walletInput.verify();
                 btnPrev.text: qsTr("Back to menu") + translationManager.emptyString
                 onPrevClicked: {
+                    wizardController.wizardStateView.wizardCreateWallet2View.pwField = "";
+                    wizardController.wizardStateView.wizardCreateWallet2View.pwConfirmField = "";
                     wizardStateView.state = "wizardHome";
                 }
                 onNextClicked: {

@@ -79,13 +79,6 @@ Rectangle {
                 topPadding: 0
                 text: qsTr("Save your most used addresses here") + translationManager.emptyString
                 width: parent.width
-
-                // @TODO: Legacy. Remove after Qt 5.8.
-                // https://stackoverflow.com/questions/41990013
-                MouseArea {
-                   anchors.fill: parent
-                   enabled: false
-                }
             }
 
             Text {
@@ -99,18 +92,13 @@ Rectangle {
                 topPadding: 0
                 text: qsTr("This makes it easier to send or receive Dinastycoin and reduces errors when typing in addresses manually.") + translationManager.emptyString
                 width: parent.width
-
-                // @TODO: Legacy. Remove after Qt 5.8.
-                // https://stackoverflow.com/questions/41990013
-                MouseArea {
-                    anchors.fill: parent
-                    enabled: false
-                }
             }
 
             DinastycoinComponents.StandardButton {
                 id: addFirstEntryButton
                 Layout.topMargin: 20
+                Layout.alignment: Qt.AlignHCenter
+                small: true
                 text: qsTr("Add an address") + translationManager.emptyString
                 onClicked: {
                     root.showAddAddress();
@@ -127,6 +115,18 @@ Rectangle {
                 Layout.bottomMargin: 20
                 fontSize: 32
                 text: qsTr("Address book") + translationManager.emptyString
+            }
+
+            DinastycoinComponents.StandardButton {
+                id: addAddressButton
+                Layout.bottomMargin: 8
+                Layout.alignment: Qt.AlignRight
+                small: true
+                text: qsTr("Add address") + translationManager.emptyString
+                fontSize: 13
+                onClicked: {
+                    root.showAddAddress();
+                }
             }
 
             ColumnLayout {
@@ -146,13 +146,13 @@ Rectangle {
                     delegate: Rectangle {
                         id: tableItem2
                         height: addressBookListRow.addressBookListItemHeight
-                        width: parent.width
+                        width: parent ? parent.width : undefined
                         Layout.fillWidth: true
-                        color: "transparent"
+                        color: itemMouseArea.containsMouse ? DinastycoinComponents.Style.titleBarButtonHoverColor : "transparent"
 
                         function doSend() {
                             console.log("Sending to: ", address +" "+ paymentId);
-                            middlePanel.sendTo(address, paymentId, description);
+                            middlePanel.sendTo(address, paymentId);
                             leftPanel.selectItem(middlePanel.state)
                         }
 
@@ -173,7 +173,7 @@ Rectangle {
                         Rectangle {
                             anchors.fill: parent
                             anchors.topMargin: 5
-                            anchors.rightMargin: 110
+                            anchors.rightMargin: 125
                             color: "transparent"
 
                             DinastycoinComponents.Label {
@@ -201,8 +201,10 @@ Rectangle {
                             }
 
                             MouseArea {
+                                id: itemMouseArea
                                 anchors.fill: parent
                                 cursorShape: Qt.PointingHandCursor
+                                hoverEnabled: true
                                 visible: root.selectAndSend
                                 onClicked: {
                                     doSend();
@@ -221,21 +223,42 @@ Rectangle {
                                 id: sendToButton
                                 image: "qrc:///images/arrow-right-in-circle-outline-medium-white.svg"
                                 color: DinastycoinComponents.Style.defaultFontColor
-                                opacity: 0.5
+                                opacity: isOpenGL ? 0.5 : 1
+                                fontAwesomeFallbackIcon: FontAwesome.arrowRight
+                                fontAwesomeFallbackSize: 22
+                                fontAwesomeFallbackOpacity: 0.5
                                 Layout.preferredWidth: 20
                                 Layout.preferredHeight: 20
+                                tooltip: qsTr("Send to this address") + translationManager.emptyString
+
                                 onClicked: {
                                     doSend();
                                 }
                             }
 
                             DinastycoinComponents.IconButton {
-                                id: renameButton
-                                image: "qrc:///images/edit.svg"
+                                fontAwesomeFallbackIcon: FontAwesome.searchPlus
+                                fontAwesomeFallbackSize: 22
                                 color: DinastycoinComponents.Style.defaultFontColor
-                                opacity: 0.5
+                                fontAwesomeFallbackOpacity: 0.5
                                 Layout.preferredWidth: 23
                                 Layout.preferredHeight: 21
+                                tooltip: qsTr("See transactions") + translationManager.emptyString
+
+                                onClicked: doSearchInHistory(address)
+                            }
+
+                            DinastycoinComponents.IconButton {
+                                id: editEntryButton
+                                image: "qrc:///images/edit.svg"
+                                color: DinastycoinComponents.Style.defaultFontColor
+                                opacity: isOpenGL ? 0.5 : 1
+                                fontAwesomeFallbackIcon: FontAwesome.edit
+                                fontAwesomeFallbackSize: 22
+                                fontAwesomeFallbackOpacity: 0.5
+                                Layout.preferredWidth: 23
+                                Layout.preferredHeight: 21
+                                tooltip: qsTr("Edit entry") + translationManager.emptyString
 
                                 onClicked: {
                                     addressBookListView.currentIndex = index;
@@ -246,10 +269,14 @@ Rectangle {
                             DinastycoinComponents.IconButton {
                                 id: copyButton
                                 image: "qrc:///images/copy.svg"
+                                color: DinastycoinComponents.Style.defaultFontColor
+                                opacity: isOpenGL ? 0.5 : 1
+                                fontAwesomeFallbackIcon: FontAwesome.clipboard
+                                fontAwesomeFallbackSize: 22
+                                fontAwesomeFallbackOpacity: 0.5
                                 Layout.preferredWidth: 16
                                 Layout.preferredHeight: 21
-                                color: DinastycoinComponents.Style.defaultFontColor
-                                opacity: 0.5
+                                tooltip: qsTr("Copy address to clipboard") + translationManager.emptyString
 
                                 onClicked: {
                                     console.log("Address copied to clipboard");
@@ -274,24 +301,6 @@ Rectangle {
                     whiteColor: DinastycoinComponents.Style._w_appWindowBorderColor
                 }
             }
-
-            DinastycoinComponents.CheckBox {
-                id: addNewEntryCheckbox
-                border: false
-                uncheckedIcon: FontAwesome.plusCircle
-                toggleOnClick: false
-                fontAwesomeIcons: true
-                fontSize: 16
-                iconOnTheLeft: true
-                Layout.fillWidth: true
-		width: 600
-                Layout.topMargin: 10
-                text: qsTr("Add address") + translationManager.emptyString;
-                onClicked: {
-                    root.showAddAddress();
-                }
-            }
-
         }
         ColumnLayout {
             id: addContactLayout
@@ -301,50 +310,78 @@ Rectangle {
             DinastycoinComponents.Label {
                 fontSize: 32
                 wrapMode: Text.WordWrap
-                text: (root.editEntry ? qsTr("Edit an address") : qsTr("Add an address")) + translationManager.emptyString
+                text: (root.editEntry ? qsTr("Edit entry") : qsTr("Add an address")) + translationManager.emptyString
             }
 
             DinastycoinComponents.LineEditMulti {
                 id: addressLine
+                visible: !root.editEntry
                 Layout.topMargin: 20
-                labelText: qsTr("<style type='text/css'>a {text-decoration: none; color: #858585; font-size: 14px;}</style>\
-                                 Address") + translationManager.emptyString
+                KeyNavigation.backtab: deleteButton.visible ? deleteButton: cancelButton
+                KeyNavigation.tab: resolveButton.visible ? resolveButton : descriptionLine
+                labelText: "<style type='text/css'>a {text-decoration: none; color: #858585; font-size: 14px;}</style> %1"
+                    .arg(qsTr("Address")) + translationManager.emptyString
                 placeholderText: {
                     if(persistentSettings.nettype == NetworkType.MAINNET){
-                        return "4.. / 8.. / OpenAlias";
+                        return "4.. / 8.. / dinastycoin:.. / OpenAlias";
                     } else if (persistentSettings.nettype == NetworkType.STAGENET){
-                        return "5.. / 7..";
+                        return "5.. / 7.. / dinastycoin:..";
                     } else if(persistentSettings.nettype == NetworkType.TESTNET){
-                        return "9.. / B..";
+                        return "9.. / B.. / dinastycoin:..";
                     }
                 }
                 wrapMode: Text.WrapAnywhere
                 addressValidation: true
-                pasteButton: true
+                pasteButton: false
                 onTextChanged: {
                     const parsed = walletManager.parse_uri_to_object(addressLine.text);
                     if (!parsed.error) {
                         addressLine.text = parsed.address;
                         descriptionLine.text = parsed.tx_description;
-                    } else {
-                        addressLine.text = clipboardText;
+                    }
+                }
+                onEnterPressed: addButton.enabled ? addButton.clicked() : ""
+                onReturnPressed: addButton.enabled ? addButton.clicked() : ""
+
+                DinastycoinComponents.InlineButton {
+                    fontFamily: FontAwesome.fontFamilySolid
+                    fontStyleName: "Solid"
+                    fontPixelSize: 18
+                    text: FontAwesome.desktop
+                    tooltip: qsTr("Grab QR code from screen") + translationManager.emptyString
+                    onClicked: {
+                        clearFields();
+                        const codes = oshelper.grabQrCodesFromScreen();
+                        for (var index = 0; index < codes.length; ++index) {
+                            const parsed = walletManager.parse_uri_to_object(codes[index]);
+                            if (!parsed.error) {
+                                addressLine.text = parsed.address
+                                descriptionLine.text = parsed.recipient_name
+                                break;
+                            } else if (walletManager.addressValid(codes[index], appWindow.persistentSettings.nettype)) {
+                                addressLine.text = codes[index];
+                                break;
+                            }
+                        }
                     }
                 }
 
-                inlineButton.text: FontAwesome.qrcode
-                inlineButton.fontPixelSize: 22
-                inlineButton.fontFamily: FontAwesome.fontFamily
-                inlineButton.textColor: DinastycoinComponents.Style.defaultFontColor
-                inlineButton.buttonColor: DinastycoinComponents.Style.orange
-                inlineButton.onClicked: {
-                    cameraUi.state = "Capture"
-                    cameraUi.qrcode_decoded.connect(root.updateFromQrCode)
+                DinastycoinComponents.InlineButton {
+                    buttonColor: DinastycoinComponents.Style.orange
+                    fontFamily: FontAwesome.fontFamily
+                    text: FontAwesome.qrcode
+                    visible : appWindow.qrScannerEnabled && !addressLine.text
+                    onClicked: {
+                        cameraUi.state = "Capture"
+                        cameraUi.qrcode_decoded.connect(root.updateFromQrCode)
+                    }
                 }
-                inlineButtonVisible : appWindow.qrScannerEnabled && !addressLine.text
             }
 
             DinastycoinComponents.StandardButton {
                 id: resolveButton
+                KeyNavigation.backtab: addressLine
+                KeyNavigation.tab: descriptionLine
                 Layout.topMargin: 10
                 text: qsTr("Resolve") + translationManager.emptyString
                 visible: TxUtils.isValidOpenAliasAddress(addressLine.text)
@@ -382,22 +419,57 @@ Rectangle {
                 }
             }
 
-            DinastycoinComponents.LineEditMulti {
+            DinastycoinComponents.LineEdit {
                 id: descriptionLine
+                KeyNavigation.backtab: resolveButton.visible ? resolveButton : addressLine
+                KeyNavigation.tab: addButton.enabled ? addButton : cancelButton
                 Layout.topMargin: 20
-                labelText: qsTr("<style type='text/css'>a {text-decoration: none; color: #858585; font-size: 14px;}</style>\
-                                 Description") + translationManager.emptyString
+                Layout.fillWidth: true
+                fontSize: 16
+                placeholderFontSize: 16
+                labelText: "<style type='text/css'>a {text-decoration: none; color: #858585; font-size: 14px;}</style> %1"
+                    .arg(qsTr("Description")) + translationManager.emptyString
                 placeholderText: qsTr("Add a name...") + translationManager.emptyString
+                onAccepted: addButton.enabled ? addButton.clicked() : ""
             }
             RowLayout {
                 Layout.topMargin: 20
+                Layout.alignment: Qt.AlignRight
+
+                DinastycoinComponents.StandardButton {
+                    id: cancelButton
+                    KeyNavigation.backtab: addButton
+                    KeyNavigation.tab: deleteButton.visible ? deleteButton : addressLine
+                    small: true
+                    text: qsTr("Cancel") + translationManager.emptyString
+                    primary: false
+                    onClicked: root.showAddressBook();
+                }
+
+                DinastycoinComponents.StandardButton {
+                    id: deleteButton
+                    KeyNavigation.backtab: cancelButton
+                    KeyNavigation.tab: addressLine
+                    small: true
+                    visible: root.editEntry
+                    text: qsTr("Delete") + translationManager.emptyString
+                    primary: false
+                    onClicked: {
+                        currentWallet.addressBook.deleteRow(addressBookListView.currentIndex);
+                        root.showAddressBook();
+                    }
+                }
+
                 DinastycoinComponents.StandardButton {
                     id: addButton
+                    KeyNavigation.backtab: descriptionLine
+                    KeyNavigation.tab: cancelButton
+                    small: true
                     text: (root.editEntry ? qsTr("Save") : qsTr("Add")) + translationManager.emptyString
                     enabled: root.checkInformation(addressLine.text, appWindow.persistentSettings.nettype)
                     onClicked: {
                         console.log("Add")
-                        if (!currentWallet.addressBook.addRow(addressLine.text.trim(),"", descriptionLine.text)) {
+                        if (!root.editEntry && !currentWallet.addressBook.addRow(addressLine.text.trim(),"", descriptionLine.text)) {
                             informationPopup.title = qsTr("Error") + translationManager.emptyString;
                             // TODO: check currentWallet.addressBook.errorString() instead.
                             if(currentWallet.addressBook.errorCode() === AddressBook.Invalid_Address)
@@ -410,47 +482,9 @@ Rectangle {
                             informationPopup.onCloseCallback = null
                             informationPopup.open();
                         } else {
-                            if (root.editEntry) {
-                                currentWallet.addressBook.deleteRow(addressBookListView.currentIndex);
-                            }
-                            root.showAddressBook();
+                            currentWallet.addressBook.setDescription(addressBookListView.currentIndex, descriptionLine.text);
                         }
-                    }
-                }
-
-                Text {
-                    id: cancelButton
-                    Layout.leftMargin: 20
-                    font.pixelSize: 16
-                    font.bold: false
-                    color: DinastycoinComponents.Style.defaultFontColor
-                    text: qsTr("Cancel") + translationManager.emptyString
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: root.showAddressBook();
-                    }
-                }
-
-                Text {
-                    id: deleteButton
-                    visible: root.editEntry
-                    Layout.leftMargin: 20
-                    font.pixelSize: 16
-                    font.bold: false
-                    color: DinastycoinComponents.Style.defaultFontColor
-                    text: qsTr("Delete") + translationManager.emptyString
-
-                    MouseArea {
-                        anchors.fill: parent
-                        hoverEnabled: true
-                        cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            currentWallet.addressBook.deleteRow(addressBookListView.currentIndex);
-                            root.showAddressBook();
-                        }
+                        root.showAddressBook()
                     }
                 }
             }
@@ -481,6 +515,7 @@ Rectangle {
         addressBookEmptyLayout.visible = false
         addressBookLayout.visible = false;
         addContactLayout.visible = true;
+        addressLine.forceActiveFocus();
     }
 
     function showEditAddress(address, description) {
@@ -491,12 +526,14 @@ Rectangle {
         addContactLayout.visible = true;
         addressLine.text = address;
         descriptionLine.text = description;
+        addressLine.forceActiveFocus();
+        addressLine.cursorPosition = addressLine.text.length;
     }
 
     function updateFromQrCode(address, payment_id, amount, tx_description, recipient_name) {
         console.log("updateFromQrCode")
         addressLine.text = address
-        descriptionLine.text = recipient_name + " " + tx_description
+        descriptionLine.text = recipient_name
         cameraUi.qrcode_decoded.disconnect(updateFromQrCode)
     }
 

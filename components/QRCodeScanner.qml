@@ -1,4 +1,4 @@
-// Parts are Copyright (c) 2019, The Dinastycoin team
+// Copyright (c) 2014-2020, The Dinastycoin Project
 //
 // All rights reserved.
 //
@@ -53,6 +53,7 @@ Rectangle {
                 script: {
 		    root.visible = true
                     camera.captureMode = Camera.CaptureStillImage
+                    camera.cameraState = Camera.ActiveState
                     camera.start()
                     finder.enabled = true
                 }
@@ -65,6 +66,7 @@ Rectangle {
                     camera.stop()
 		    root.visible = false
                     finder.enabled = false
+                    camera.cameraState = Camera.UnloadedState
                 }
             }
         }
@@ -74,6 +76,7 @@ Rectangle {
         id: camera
         objectName: "qrCameraQML"
         captureMode: Camera.CaptureStillImage
+        cameraState: Camera.UnloadedState
 
         focus {
             focusMode: Camera.FocusContinuous
@@ -83,9 +86,17 @@ Rectangle {
         id : finder
         objectName: "QrFinder"
         onDecoded : {
-            root.qrcode_decoded(address, payment_id, amount, tx_description, recipient_name, extra_parameters)
-            root.state = "Stopped"
-	}
+            const parsed = walletManager.parse_uri_to_object(data);
+            if (!parsed.error) {
+                root.qrcode_decoded(parsed.address, parsed.payment_id, parsed.amount, parsed.tx_description, parsed.recipient_name, parsed.extra_parameters);
+                root.state = "Stopped";
+            } else if (walletManager.addressValid(data, appWindow.persistentSettings.nettype)) {
+                root.qrcode_decoded(data, "", "", "", "", null);
+                root.state = "Stopped";
+            } else {
+                onNotifyError(parsed.error);
+            }
+        }
         onNotifyError : {
             if( warning )
                 messageDialog.icon = StandardIcon.Critical

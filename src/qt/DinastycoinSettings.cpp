@@ -134,12 +134,13 @@ QVariant DinastycoinSettings::readProperty(const QMetaProperty &property) const
 void DinastycoinSettings::init()
 {
     if (!this->m_initialized) {
-        this->m_settings = this->m_fileName.isEmpty() ? new QSettings() : new QSettings(this->m_fileName, QSettings::IniFormat);
+        this->m_settings = portableConfigExists() ? portableSettings() : unportableSettings();
 #ifdef QT_DEBUG
         qDebug() << "QQmlSettings: stored at" << this->m_settings->fileName();
 #endif
         this->load();
         this->m_initialized = true;
+        emit portableChanged();
     }
 }
 
@@ -148,11 +149,16 @@ void DinastycoinSettings::reset()
     if (this->m_initialized && this->m_settings && !this->m_changedProperties.isEmpty())
         this->store();
     if (this->m_settings)
-        delete this->m_settings;
+        this->m_settings.reset();
 }
 
 void DinastycoinSettings::store()
 {
+    if (!m_writable)
+    {
+        return;
+    }
+
     QHash<const char *, QVariant>::const_iterator it = this->m_changedProperties.constBegin();
 
     while (it != this->m_changedProperties.constEnd()) {
@@ -168,6 +174,58 @@ void DinastycoinSettings::store()
     this->m_changedProperties.clear();
 }
 
+bool DinastycoinSettings::portable() const
+{
+    return this->m_settings && this->m_settings->fileName() == portableFilePath();
+}
+
+bool DinastycoinSettings::portableConfigExists()
+{
+    QFileInfo info(portableFilePath());
+    return info.exists() && info.isFile();
+}
+
+QString DinastycoinSettings::portableFilePath()
+{
+    static QString filename(QDir(portableFolderName()).absoluteFilePath("settings.ini"));
+    return filename;
+}
+
+QString DinastycoinSettings::portableFolderName()
+{
+    return "dinastycoin-storage";
+}
+
+std::unique_ptr<QSettings> DinastycoinSettings::portableSettings() const
+{
+    return std::unique_ptr<QSettings>(new QSettings(portableFilePath(), QSettings::IniFormat));
+}
+
+std::unique_ptr<QSettings> DinastycoinSettings::unportableSettings() const
+{
+    if (this->m_fileName.isEmpty())
+    {
+        return std::unique_ptr<QSettings>(new QSettings());
+    }
+    return std::unique_ptr<QSettings>(new QSettings(this->m_fileName, QSettings::IniFormat));
+}
+
+void DinastycoinSettings::swap(std::unique_ptr<QSettings> newSettings)
+{
+    const QMetaObject *mo = this->metaObject();
+    const int count = mo->propertyCount();
+    for (int offset = mo->propertyOffset(); offset < count; ++offset)
+    {
+        const QMetaProperty &property = mo->property(offset);
+        const QVariant value = readProperty(property);
+        newSettings->setValue(property.name(), value);
+    }
+
+    this->m_settings.swap(newSettings);
+    this->m_settings->sync();
+    emit portableChanged();
+}
+
 void DinastycoinSettings::setFileName(const QString &fileName)
 {
     if (fileName != this->m_fileName) {
@@ -181,6 +239,30 @@ void DinastycoinSettings::setFileName(const QString &fileName)
 QString DinastycoinSettings::fileName() const
 {
     return this->m_fileName;
+}
+
+bool DinastycoinSettings::setPortable(bool enabled)
+{
+    std::unique_ptr<QSettings> newSettings = enabled ? portableSettings() : unportableSettings();
+    if (newSettings->status() != QSettings::NoError)
+    {
+        return false;
+    }
+
+    setWritable(true);
+    swap(std::move(newSettings));
+
+    if (!enabled)
+    {
+        QFile::remove(portableFilePath());
+    }
+
+    return true;
+}
+
+void DinastycoinSettings::setWritable(bool enabled)
+{
+    m_writable = enabled;
 }
 
 void DinastycoinSettings::timerEvent(QTimerEvent *event)

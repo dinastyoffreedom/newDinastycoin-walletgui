@@ -152,15 +152,7 @@ Rectangle {
             Layout.fillWidth: true
             columnSpacing: 20
 
-            DinastycoinComponents.StandardButton {
-                id: idChangeLang
-                Layout.minimumWidth: 150
-                text: qsTr("Language") + translationManager.emptyString
-
-                onClicked: {
-                    appWindow.toggleLanguageView();
-                }
-            }
+            DinastycoinComponents.LanguageButton { }
 
             DinastycoinComponents.StandardButton {
                 id: btnContinue
@@ -244,5 +236,9 @@ Rectangle {
 
     Timer {
         id: versionTimer
+    }
+
+    function onPageCompleted() {
+        persistentSettings.setWritable(false);
     }
 }

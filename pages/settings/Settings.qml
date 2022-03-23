@@ -48,7 +48,39 @@ ColumnLayout {
     property int settingsHeight: 900
     property alias settingsStateViewState: settingsStateView.state
 
-    Navbar{}
+    DinastycoinComponents.Navbar {
+        id: navbarId
+        Layout.alignment: Qt.AlignHCenter
+        Layout.topMargin: height
+        Layout.bottomMargin: height
+
+        DinastycoinComponents.NavbarItem {
+            active: settingsStateView.state == "Wallet"
+            text: qsTr("Wallet") + translationManager.emptyString
+            onSelected: settingsStateView.state = "Wallet"
+        }
+        DinastycoinComponents.NavbarItem {
+            active: settingsStateView.state == "UI"
+            text: qsTr("Interface") + translationManager.emptyString
+            onSelected: settingsStateView.state = "UI"
+        }
+        DinastycoinComponents.NavbarItem {
+            active: settingsStateView.state == "Node"
+            text: qsTr("Node") + translationManager.emptyString
+            visible: appWindow.walletMode >= 2
+            onSelected: settingsStateView.state = "Node"
+        }
+        DinastycoinComponents.NavbarItem {
+            active: settingsStateView.state == "Log"
+            text: qsTr("Log") + translationManager.emptyString
+            onSelected: settingsStateView.state = "Log"
+        }
+        DinastycoinComponents.NavbarItem {
+            active: settingsStateView.state == "Info"
+            text: qsTr("Info") + translationManager.emptyString
+            onSelected: settingsStateView.state = "Info"
+        }
+    }
 
     Rectangle{
         id: settingsStateView
@@ -83,18 +115,23 @@ ColumnLayout {
             State {
                 name: "Wallet"
                 PropertyChanges { target: settingsStateView; currentView: settingsStateView.settingsWalletView }
+                PropertyChanges { target: settingsPage; settingsHeight: settingsStateView.settingsWalletView.settingsHeight + 140 }
             }, State {
                 name: "UI"
                 PropertyChanges { target: settingsStateView; currentView: settingsStateView.settingsLayoutView }
+                PropertyChanges { target: settingsPage; settingsHeight: settingsStateView.settingsLayoutView.layoutHeight + 140 }
             }, State {
                 name: "Node"
                 PropertyChanges { target: settingsStateView; currentView: settingsStateView.settingsNodeView }
+                PropertyChanges { target: settingsPage; settingsHeight: settingsStateView.settingsNodeView.nodeHeight + 140 }
             }, State {
                 name: "Log"
                 PropertyChanges { target: settingsStateView; currentView: settingsStateView.settingsLogView }
+                PropertyChanges { target: settingsPage; settingsHeight: settingsStateView.settingsLogView.logHeight + 140 }
             }, State {
                 name: "Info"
                 PropertyChanges { target: settingsStateView; currentView: settingsStateView.settingsInfoView }
+                PropertyChanges { target: settingsPage; settingsHeight: settingsStateView.settingsInfoView.infoHeight + 140 }
             }
         ]
 
@@ -109,7 +146,7 @@ ColumnLayout {
                     PropertyAnimation {
                         target: enterItem
                         property: "x"
-                        from: 0 - target.width
+                        from: (navbarId.currentIndex < navbarId.previousIndex ? 1 : -1) * - target.width
                         to: 0
                         duration: 300
                         easing.type: Easing.OutCubic
@@ -118,7 +155,7 @@ ColumnLayout {
                         target: exitItem
                         property: "x"
                         from: 0
-                        to: target.width
+                        to: (navbarId.currentIndex < navbarId.previousIndex ? 1 : -1) * target.width
                         duration: 300
                         easing.type: Easing.OutCubic
                     }

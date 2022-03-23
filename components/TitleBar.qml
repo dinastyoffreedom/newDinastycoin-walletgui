@@ -110,12 +110,24 @@ Rectangle {
                 opacity: 0.75
             }
 
+            DinastycoinComponents.Tooltip {
+                id: btnCloseWalletTooltip
+                anchors.fill: parent
+                text: qsTr("Close this wallet and return to main menu") + translationManager.emptyString
+            }
+
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onEntered: parent.color = DinastycoinComponents.Style.titleBarButtonHoverColor
-                onExited: parent.color = "transparent"
+                onEntered: {
+                    parent.color = DinastycoinComponents.Style.titleBarButtonHoverColor
+                    btnCloseWalletTooltip.tooltipPopup.open()
+                }
+                onExited: {
+                    parent.color = "transparent"
+                    btnCloseWalletTooltip.tooltipPopup.close()
+                }
                 onClicked: root.closeWalletClicked(leftPanel.visible)
             }
         }
@@ -138,12 +150,24 @@ Rectangle {
                 opacity: 0.75
             }
 
+            DinastycoinComponents.Tooltip {
+                id: btnLanguageToggleTooltip
+                anchors.fill: parent
+                text: qsTr("Change language") + translationManager.emptyString
+            }
+
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onEntered: parent.color = DinastycoinComponents.Style.titleBarButtonHoverColor
-                onExited: parent.color = "transparent"
+                onEntered: {
+                    parent.color = DinastycoinComponents.Style.titleBarButtonHoverColor
+                    btnLanguageToggleTooltip.tooltipPopup.open()
+                }
+                onExited: {
+                    parent.color = "transparent"
+                    btnLanguageToggleTooltip.tooltipPopup.close()
+                }
                 onClicked: root.languageClicked()
             }
         }
@@ -165,15 +189,26 @@ Rectangle {
                 opacity: 0.75
             }
 
+            DinastycoinComponents.Tooltip {
+                id: btnSwitchThemeTooltip
+                anchors.fill: parent
+                text: DinastycoinComponents.Style.blackTheme ? qsTr("Switch to light theme") : qsTr("Switch to dark theme") + translationManager.emptyString
+            }
+
             MouseArea {
                 anchors.fill: parent
                 hoverEnabled: true
                 cursorShape: Qt.PointingHandCursor
-                onEntered: parent.color = DinastycoinComponents.Style.titleBarButtonHoverColor
-                onExited: parent.color = "transparent"
+                onEntered: {
+                    parent.color = DinastycoinComponents.Style.titleBarButtonHoverColor
+                    btnSwitchThemeTooltip.tooltipPopup.open()
+                }
+                onExited: {
+                    parent.color = "transparent"
+                    btnSwitchThemeTooltip.tooltipPopup.close()
+                }
                 onClicked: {
                     DinastycoinComponents.Style.blackTheme = !DinastycoinComponents.Style.blackTheme;
-                    persistentSettings.blackTheme = DinastycoinComponents.Style.blackTheme;
                 }
             }
         }
@@ -204,15 +239,13 @@ Rectangle {
                 source: DinastycoinComponents.Style.titleBarLogoSource
                 visible: {
                     if(!isOpenGL) return true;
-                    return true;
-//                    if(!DinastycoinComponents.Style.blackTheme) return true;
+                    if(!DinastycoinComponents.Style.blackTheme) return true;
                     return false;
                 }
             }
 
             Colorize {
-                visible: false
-//                visible: isOpenGL && DinastycoinComponents.Style.blackTheme
+                visible: isOpenGL && DinastycoinComponents.Style.blackTheme
                 anchors.fill: imgLogo
                 source: imgLogo
                 saturation: 0.0
@@ -311,8 +344,8 @@ Rectangle {
                 width: 16
                 image: DinastycoinComponents.Style.titleBarCloseSource
                 color: DinastycoinComponents.Style.defaultFontColor
-                fontAwesomeFallbackIcon: FontAwesome.timesRectangle
-                fontAwesomeFallbackSize: 18
+                fontAwesomeFallbackIcon: FontAwesome.times
+                fontAwesomeFallbackSize: 21
                 fontAwesomeFallbackOpacity: DinastycoinComponents.Style.blackTheme ? 0.8 : 0.6
                 opacity: 0.75
             }
@@ -349,6 +382,7 @@ Rectangle {
         anchors.fill: parent
         propagateComposedEvents: true
         onPressed: previousPosition = globalCursor.getPosition()
+        onDoubleClicked: root.maximizeClicked()
         onPositionChanged: {
             if (pressedButtons == Qt.LeftButton) {
                 var pos = globalCursor.getPosition()

@@ -37,12 +37,13 @@ Rectangle {
     color: "transparent"
     property alias miningHeight: mainLayout.height
     property double currentHashRate: 0
+    property int threads: idealThreadCount / 2
 
     ColumnLayout {
         id: mainLayout
         Layout.fillWidth: true
         anchors.margins: 20
-        anchors.topMargin: 40
+        anchors.topMargin: 0
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.right: parent.right
@@ -57,18 +58,18 @@ Rectangle {
         DinastycoinComponents.WarningBox {
             Layout.bottomMargin: 8
             text: qsTr("Mining is only available on local daemons.") + translationManager.emptyString
-            visible: !walletManager.isDaemonLocal(appWindow.currentDaemonAddress)
+            visible: persistentSettings.useRemoteNode
         }
 
         DinastycoinComponents.WarningBox {
             Layout.bottomMargin: 8
             text: qsTr("Your daemon must be synchronized before you can start mining") + translationManager.emptyString
-            visible: walletManager.isDaemonLocal(appWindow.currentDaemonAddress) && !appWindow.daemonSynced
+            visible: !persistentSettings.useRemoteNode && !appWindow.daemonSynced
         }
 
         DinastycoinComponents.TextPlain {
             id: soloMainLabel
-            text: qsTr("Mining with your computer helps strengthen the Dinastycoin network. The more that people mine, the harder it is for the network to be attacked, and every little bit helps.\n\nMining also gives you a small chance to earn some Dinastycoin. Your computer will create hashes looking for block solutions. If you find a block, you will get the associated reward. Good luck!") + translationManager.emptyString
+            text: qsTr("Mining with your computer helps strengthen the Dinastycoin network. The more people mine, the harder it is for the network to be attacked, and every little bit helps.\n\nMining also gives you a small chance to earn some Dinastycoin. Your computer will create hashes looking for block solutions. If you find a block, you will get the associated reward. Good luck!") + translationManager.emptyString
             wrapMode: Text.Wrap
             Layout.fillWidth: true
             font.family: DinastycoinComponents.Style.fontRegular.name
@@ -106,30 +107,56 @@ Rectangle {
                 Layout.fillWidth: true
                 spacing: 16
 
-                DinastycoinComponents.LineEdit {
-                    id: soloMinerThreadsLine
-                    Layout.minimumWidth: 200
-                    text: "1"
-                    validator: IntValidator { bottom: 1; top: idealThreadCount }
-                }
+                RowLayout {
+                    DinastycoinComponents.StandardButton {
+                        id: removeThreadButton
+                        small: true
+                        primary: false
+                        text: "−"
+                        enabled: threads > 1
+                        onClicked: threads--
+                    }
 
-                DinastycoinComponents.TextPlain {
-                    id: numAvailableThreadsText
-                    text: qsTr("Max # of CPU threads available for mining: ") + idealThreadCount + translationManager.emptyString
-                    wrapMode: Text.WordWrap
-                    font.family: DinastycoinComponents.Style.fontRegular.name
-                    font.pixelSize: 14
-                    color: DinastycoinComponents.Style.defaultFontColor
+                    DinastycoinComponents.TextPlain {
+                        Layout.bottomMargin: 1
+                        Layout.minimumWidth: 45
+                        color: DinastycoinComponents.Style.defaultFontColor
+                        text: threads
+                        horizontalAlignment: Text.AlignHCenter
+                        font.pixelSize: 16
+
+                        MouseArea {
+                            anchors.fill: parent
+                            scrollGestureEnabled: false
+                            onWheel: {
+                                if (wheel.angleDelta.y > 0 && threads < idealThreadCount) {
+                                    return threads++
+                                } else if (wheel.angleDelta.y < 0 && threads > 1) {
+                                    return threads--
+                                }
+                            }
+                        }
+                    }
+
+                    DinastycoinComponents.StandardButton {
+                        id: addThreadButton
+                        small: true
+                        primary: false
+                        text: "+"
+                        enabled: threads < idealThreadCount
+                        onClicked: threads++
+                    }
                 }
 
                 RowLayout {
                     DinastycoinComponents.StandardButton {
                         id: autoRecommendedThreadsButton
                         small: true
-                        text: qsTr("Use recommended # of threads") + translationManager.emptyString
+                        primary: false
+                        text: qsTr("Use half (recommended)") +  translationManager.emptyString
                         enabled: startSoloMinerButton.enabled
                         onClicked: {
-                                soloMinerThreadsLine.text = Math.floor(idealThreadCount / 2);
+                                threads = idealThreadCount / 2
                                 appWindow.showStatusMessage(qsTr("Set to use recommended # of threads"),3)
                         }
                     }
@@ -137,24 +164,13 @@ Rectangle {
                     DinastycoinComponents.StandardButton {
                         id: autoSetMaxThreadsButton
                         small: true
-                        text: qsTr("Use all threads") + translationManager.emptyString
+                        primary: false
+                        text: qsTr("Use all threads") + " (" + idealThreadCount + ")" + translationManager.emptyString
                         enabled: startSoloMinerButton.enabled
                         onClicked: {
-                            soloMinerThreadsLine.text = idealThreadCount
+                            threads = idealThreadCount
                             appWindow.showStatusMessage(qsTr("Set to use all threads") + translationManager.emptyString,3)
                         }
-                    }
-                }
-
-                RowLayout {
-                    DinastycoinComponents.CheckBox {
-                        id: backgroundMining
-                        enabled: startSoloMinerButton.enabled
-                        checked: persistentSettings.allow_background_mining
-                        onClicked: {persistentSettings.allow_background_mining = checked}
-                        text: qsTr("Background mining (experimental)") + translationManager.emptyString
-                        width: 600
-                        Layout.fillWidth: true
                     }
                 }
 
@@ -167,6 +183,35 @@ Rectangle {
                         checked: !persistentSettings.miningIgnoreBattery
                         onClicked: {persistentSettings.miningIgnoreBattery = !checked}
                         text: qsTr("Enable mining when running on battery") + translationManager.emptyString
+                    }
+                }
+            }
+
+            ColumnLayout {
+                Layout.alignment: Qt.AlignTop | Qt.AlignLeft
+                Layout.minimumWidth: 140
+
+                DinastycoinComponents.Label {
+                    id: optionsLabel
+                    color: DinastycoinComponents.Style.defaultFontColor
+                    text: qsTr("Options") + translationManager.emptyString
+                    fontSize: 16
+                    wrapMode: Text.Wrap
+                    Layout.preferredWidth: manageSoloMinerLabel.textWidth
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                spacing: 16
+
+                RowLayout {
+                    DinastycoinComponents.CheckBox {
+                        id: backgroundMining
+                        enabled: startSoloMinerButton.enabled
+                        checked: persistentSettings.allow_background_mining
+                        onClicked: persistentSettings.allow_background_mining = checked
+                        text: qsTr("Background mining (experimental)") + translationManager.emptyString
                     }
                 }
             }
@@ -193,15 +238,16 @@ Rectangle {
                         visible: true
                         id: startSoloMinerButton
                         small: true
+                        primary: !stopSoloMinerButton.enabled
                         text: qsTr("Start mining") + translationManager.emptyString
                         onClicked: {
-                            var success = walletManager.startMining(appWindow.currentWallet.address(0, 0), soloMinerThreadsLine.text, persistentSettings.allow_background_mining, persistentSettings.miningIgnoreBattery)
+                            var success = walletManager.startMining(appWindow.currentWallet.address(0, 0), threads, persistentSettings.allow_background_mining, persistentSettings.miningIgnoreBattery)
                             if (success) {
                                 update()
                             } else {
                                 errorPopup.title  = qsTr("Error starting mining") + translationManager.emptyString;
                                 errorPopup.text = qsTr("Couldn't start mining.<br>") + translationManager.emptyString
-                                if (!walletManager.isDaemonLocal(appWindow.currentDaemonAddress))
+                                if (persistentSettings.useRemoteNode)
                                     errorPopup.text += qsTr("Mining is only available on local daemons. Run a local daemon to be able to mine.<br>") + translationManager.emptyString
                                 errorPopup.icon = StandardIcon.Critical
                                 errorPopup.open()
@@ -213,6 +259,7 @@ Rectangle {
                         visible: true
                         id: stopSoloMinerButton
                         small: true
+                        primary: stopSoloMinerButton.enabled
                         text: qsTr("Stop mining") + translationManager.emptyString
                         onClicked: {
                             walletManager.stopMining()
@@ -253,7 +300,19 @@ Rectangle {
 
     function updateStatusText() {
         if (appWindow.isMining) {
-            statusText.text = qsTr("Mining at %1 H/s").arg(walletManager.miningHashRate()) + translationManager.emptyString;
+            var userHashRate = walletManager.miningHashRate();
+            if (userHashRate === 0) {
+                statusText.text = qsTr("Mining temporarily suspended.") + translationManager.emptyString;
+            }
+            else {
+                var blockTime = 120;
+                var blocksPerDay = 86400 / blockTime;
+                var globalHashRate = walletManager.networkDifficulty() / blockTime;
+                var probabilityFindNextBlock = userHashRate / globalHashRate;
+                var probabilityFindBlockDay = 1 - Math.pow(1 - probabilityFindNextBlock, blocksPerDay);
+                var chanceFindBlockDay = Math.round(1 / probabilityFindBlockDay);
+                statusText.text = qsTr("Mining at %1 H/s. It gives you a 1 in %2 daily chance of finding a block.").arg(userHashRate).arg(chanceFindBlockDay) + translationManager.emptyString;
+            }
         }
         else {
             statusText.text = qsTr("Not mining") + translationManager.emptyString;
@@ -261,7 +320,7 @@ Rectangle {
     }
 
     function onMiningStatus(isMining) {
-        var daemonReady = walletManager.isDaemonLocal(appWindow.currentDaemonAddress) && appWindow.daemonSynced
+        var daemonReady = !persistentSettings.useRemoteNode && appWindow.daemonSynced
         appWindow.isMining = isMining;
         updateStatusText()
         startSoloMinerButton.enabled = !appWindow.isMining && daemonReady
@@ -286,7 +345,7 @@ Rectangle {
     function onPageCompleted() {
         console.log("Mining page loaded");
         update()
-        timer.running = walletManager.isDaemonLocal(appWindow.currentDaemonAddress)
+        timer.running = !persistentSettings.useRemoteNode
     }
 
     function onPageClosed() {

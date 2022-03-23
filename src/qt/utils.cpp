@@ -27,7 +27,8 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <QtCore>
-#include <QApplication>
+#include <QCoreApplication>
+#include <QtGlobal>
 
 #include "TailsOS.h"
 #include "utils.h"
@@ -35,6 +36,24 @@
 bool fileExists(QString path) {
     QFileInfo check_file(path);
     return check_file.exists() && check_file.isFile();
+}
+
+QByteArray fileGetContents(QString path)
+{
+    QFile file(path);
+    if (!file.open(QFile::ReadOnly))
+    {
+        throw std::runtime_error(QString("failed to open %1").arg(path).toStdString());
+    }
+
+    QByteArray data;
+    data.resize(file.size());
+    if (file.read(data.data(), data.size()) != data.size())
+    {
+        throw std::runtime_error(QString("failed to read %1").arg(path).toStdString());
+    }
+
+    return data;
 }
 
 QByteArray fileOpen(QString path) {
@@ -50,7 +69,8 @@ QByteArray fileOpen(QString path) {
 bool fileWrite(QString path, QString data) {
     QFile file(path);
     if(file.open(QIODevice::WriteOnly)){
-        QTextStream out(&file); out << data << endl;
+        QTextStream out(&file);
+        out << data << '\n';
         file.close();
         return true;
     }
@@ -68,7 +88,7 @@ QString getAccountName(){
 }
 
 #ifdef Q_OS_LINUX
-QString xdgMime(QApplication &app){
+QString xdgMime(){
     return QString(
         "[Desktop Entry]\n"
         "Name=Dinastycoin GUI\n"
@@ -85,32 +105,32 @@ QString xdgMime(QApplication &app){
         "StartupNotify=true\n"
         "X-GNOME-Bugzilla-Bugzilla=GNOME\n"
         "X-GNOME-UsesNotifications=true\n"
-    ).arg(app.applicationFilePath());
+        "StartupWMClass=dinastycoin-wallet-gui\n"
+    ).arg(QCoreApplication::applicationFilePath());
 }
 
-void registerXdgMime(QApplication &app){
+void registerXdgMime(){
     // Register desktop entry
     // - MacOS handled via Info.plist
     // - Windows handled in the installer by rbrunner7
     // - Linux written to `QStandardPaths::ApplicationsLocation`
     // - Tails written to persistent dotfiles
-    QString mime = xdgMime(app);
+    QString mime = xdgMime();
     QString appPath = QStandardPaths::writableLocation(QStandardPaths::ApplicationsLocation);
     QString filePath = QString("%1/dinastycoin-gui.desktop").arg(appPath);
 
-    if (TailsOS::detect() && TailsOS::detectDotPersistence() && TailsOS::usePersistence) {
-        TailsOS::persistXdgMime(filePath, mime);
-        return;
+    if (TailsOS::detect())
+    {
+        if (TailsOS::detectDotPersistence() && TailsOS::usePersistence)
+        {
+            TailsOS::persistXdgMime(filePath, mime);
+        }
     }
-
-    QFileInfo file(filePath);
-    QDir().mkpath(file.path()); // ensure directory exists
-
-#ifdef QT_DEBUG
-    qDebug() << "Writing xdg mime: " << filePath;
-#endif
-
-    fileWrite(filePath, mime);
+    else
+    {
+        QDir().mkpath(QFileInfo(filePath).path());
+        fileWrite(filePath, mime);
+    }
 }
 #endif
 

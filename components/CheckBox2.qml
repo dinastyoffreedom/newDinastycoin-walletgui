@@ -1,4 +1,4 @@
-// Parts are Copyright (c) 2019, The Dinastycoin team
+// Copyright (c) 2014-2015, The Dinastycoin Project
 //
 // All rights reserved.
 //

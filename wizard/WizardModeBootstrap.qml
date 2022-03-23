@@ -100,10 +100,8 @@ Rectangle {
                 DinastycoinComponents.CheckBox {
                     id: understoodCheckbox
                     Layout.topMargin: 20
-                    width: 600
                     fontSize: 16
                     text: qsTr("I understand the privacy implications of using a third-party server.") + translationManager.emptyString
-                    Layout.fillWidth: true
                     onClicked: {
                         wizardModeBootstrapWarning.understood = !wizardModeBootstrapWarning.understood
                     }

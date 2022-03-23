@@ -29,6 +29,7 @@ QtObject {
     property string textSelectedColor: blackTheme ? _b_textSelectedColor : _w_textSelectedColor
 
     property string inputBoxBackground: blackTheme ? _b_inputBoxBackground : _w_inputBoxBackground
+    property string inputBoxBackgroundDisabled: blackTheme ? _b_inputBoxBackgroundDisabled : _w_inputBoxBackgroundDisabled
     property string inputBoxBackgroundError: blackTheme ? _b_inputBoxBackgroundError : _w_inputBoxBackgroundError
     property string inputBoxColor: blackTheme ? _b_inputBoxColor : _w_inputBoxColor
     property string legacy_placeholderFontColor: blackTheme ? _b_legacy_placeholderFontColor : _w_legacy_placeholderFontColor
@@ -41,8 +42,12 @@ QtObject {
     property string buttonBackgroundColorDisabled: blackTheme ? _b_buttonBackgroundColorDisabled : _w_buttonBackgroundColorDisabled
     property string buttonBackgroundColorDisabledHover: blackTheme ? _b_buttonBackgroundColorDisabledHover : _w_buttonBackgroundColorDisabledHover
     property string buttonInlineBackgroundColor: blackTheme ? _b_buttonInlineBackgroundColor : _w_buttonInlineBackgroundColor
+    property string buttonInlineBackgroundColorHover: blackTheme ? _b_buttonInlineBackgroundColorHover : _w_buttonInlineBackgroundColorHover
     property string buttonTextColor: blackTheme ? _b_buttonTextColor : _w_buttonTextColor
     property string buttonTextColorDisabled: blackTheme ? _b_buttonTextColorDisabled : _w_buttonTextColorDisabled
+    property string buttonSecondaryBackgroundColor: blackTheme ? _b_buttonSecondaryBackgroundColor : _w_buttonSecondaryBackgroundColor
+    property string buttonSecondaryBackgroundColorHover: blackTheme ? _b_buttonSecondaryBackgroundColorHover : _w_buttonSecondaryBackgroundColorHover
+    property string buttonSecondaryTextColor: blackTheme ? _b_buttonSecondaryTextColor : _w_buttonSecondaryTextColor
     property string dividerColor: blackTheme ? _b_dividerColor : _w_dividerColor
     property real dividerOpacity: blackTheme ? _b_dividerOpacity : _w_dividerOpacity
 
@@ -85,6 +90,7 @@ QtObject {
     property string _b_textSelectedColor: "white"
 
     property string _b_inputBoxBackground: "black"
+    property string _b_inputBoxBackgroundDisabled: Qt.rgba(255, 255, 255, 0.10)
     property string _b_inputBoxBackgroundError: "#FFDDDD"
     property string _b_inputBoxColor: "white"
     property string _b_legacy_placeholderFontColor: "#BABABA"
@@ -97,8 +103,12 @@ QtObject {
     property string _b_buttonBackgroundColorDisabled: "#707070"
     property string _b_buttonBackgroundColorDisabledHover: "#808080"
     property string _b_buttonInlineBackgroundColor: "#707070"
+    property string _b_buttonInlineBackgroundColorHover: "#808080"
     property string _b_buttonTextColor: "white"
     property string _b_buttonTextColorDisabled: "black"
+    property string _b_buttonSecondaryBackgroundColor: "#707070"
+    property string _b_buttonSecondaryBackgroundColorHover: "#808080"
+    property string _b_buttonSecondaryTextColor: "white"
     property string _b_dividerColor: "white"
     property real _b_dividerOpacity: 0.20
 
@@ -123,7 +133,7 @@ QtObject {
     property string _b_menuButtonImageRightColor: "white"
     property string _b_menuButtonImageRightSource: "qrc:///images/right.svg"
     property string _b_menuButtonImageDotArrowSource: "qrc:///images/arrow-right-medium-white.png"
-    property string _b_inlineButtonTextColor: "black"
+    property string _b_inlineButtonTextColor: "white"
     property string _b_inlineButtonBorderColor: "black"
     property string _b_appWindowBackgroundColor: "white"
     property string _b_appWindowBorderColor: "#313131"
@@ -141,6 +151,7 @@ QtObject {
     property string _w_textSelectedColor: "black"
 
     property string _w_inputBoxBackground: "white"
+    property string _w_inputBoxBackgroundDisabled: Qt.rgba(0, 0, 0, 0.20)
     property string _w_inputBoxBackgroundError: "#FFDDDD"
     property string _w_inputBoxColor: "black"
     property string _w_legacy_placeholderFontColor: "#BABABA"
@@ -152,9 +163,13 @@ QtObject {
     property string _w_buttonBackgroundColorHover: "#E65E00"
     property string _w_buttonBackgroundColorDisabled: "#bbbbbb"
     property string _w_buttonBackgroundColorDisabledHover: "#D1D1D1"
-    property string _w_buttonInlineBackgroundColor: "#bbbbbb"
+    property string _w_buttonInlineBackgroundColor: "#d9d9d9"
+    property string _w_buttonInlineBackgroundColorHover: "#C8C8C8"
     property string _w_buttonTextColor: "white"
     property string _w_buttonTextColorDisabled: "black"
+    property string _w_buttonSecondaryBackgroundColor: "#d9d9d9"
+    property string _w_buttonSecondaryBackgroundColorHover: "#C8C8C8"
+    property string _w_buttonSecondaryTextColor: "#4d4d4d"
     property string _w_dividerColor: "black"
     property real _w_dividerOpacity: 0.20
 
@@ -179,7 +194,7 @@ QtObject {
     property string _w_menuButtonImageRightColorActive: "#FA6800"
     property string _w_menuButtonImageRightColor: "#808080"
     property string _w_menuButtonImageDotArrowSource: "qrc:///images/arrow-right-medium-white.png"
-    property string _w_inlineButtonTextColor: "white"
+    property string _w_inlineButtonTextColor: "#4d4d4d"
     property string _w_inlineButtonBorderColor: "transparent"
     property string _w_appWindowBackgroundColor: "black"
     property string _w_appWindowBorderColor: "#dedede"

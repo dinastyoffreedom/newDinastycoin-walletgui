@@ -48,9 +48,17 @@ Item {
     property int fontSize: 14
     property alias fontColor: label.color
     property bool iconOnTheLeft: true
+    property alias tooltipIconVisible: label.tooltipIconVisible
+    property alias tooltip: label.tooltip
     signal clicked()
+
     height: 25
     width: checkBoxLayout.width
+    opacity: enabled ? 1 : 0.7
+
+    Keys.onEnterPressed: toggle()
+    Keys.onReturnPressed: Keys.onEnterPressed(event)
+    Keys.onSpacePressed: Keys.onEnterPressed(event)
 
     function toggle(){
         if (checkBox.toggleOnClick) {
@@ -62,10 +70,8 @@ Item {
     RowLayout {
         id: checkBoxLayout
         layoutDirection: iconOnTheLeft ? Qt.LeftToRight : Qt.RightToLeft
-        spacing: (!isMobile ? 10 : 8)
-        width: (!isMobile ? 600 : parent.fillWidth)
-        Layout.fillWidth: true
-        anchors.fill: parent
+        spacing: 10
+
         Item {
             id: checkMark
             height: checkBox.height
@@ -76,9 +82,9 @@ Item {
                 visible: checkBox.border
                 anchors.fill: parent
                 radius: 3
-                color: "transparent"
+                color: checkBox.enabled ? "transparent" : DinastycoinComponents.Style.inputBoxBackgroundDisabled
                 border.color:
-                    if(checkBox.checked){
+                    if (checkBox.activeFocus) {
                         return DinastycoinComponents.Style.inputBorderColorActive;
                     } else {
                         return DinastycoinComponents.Style.inputBorderColorInActive;
@@ -110,15 +116,17 @@ Item {
             font.pixelSize: checkBox.fontSize
             color: DinastycoinComponents.Style.defaultFontColor
             textFormat: Text.RichText
-            wrapMode: Text.Wrap
-            Layout.fillWidth: true
+            wrapMode: Text.NoWrap
+            visible: text != ""
         }
-
     }
 
     MouseArea {
         anchors.fill: parent
+        hoverEnabled: true
         cursorShape: Qt.PointingHandCursor
+        onEntered: !label.tooltipIconVisible && label.tooltip ? label.tooltipPopup.open() : ""
+        onExited:  !label.tooltipIconVisible && label.tooltip ? label.tooltipPopup.close() : ""
         onClicked: {
             toggle()
         }

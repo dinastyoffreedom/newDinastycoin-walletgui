@@ -36,8 +36,8 @@ import "../../components/effects" as DinastycoinEffects
 
 Rectangle{
     color: "transparent"
-    height: 1400
     Layout.fillWidth: true
+    property alias nodeHeight: root.height
 
     /* main layout */
     ColumnLayout {
@@ -50,10 +50,6 @@ Rectangle{
         anchors.right: parent.right
 
         spacing: 0
-        property int labelWidth: 120
-        property int editWidth: 400
-        property int lineEditFontSize: 14
-        property int buttonWidth: 110
 
         Rectangle {
             Layout.fillWidth: true
@@ -76,7 +72,7 @@ Rectangle{
                 Layout.fillHeight: true
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                color: DinastycoinComponents.Style.blackTheme ? "white" : "darkgrey"
+                color: "darkgrey"
                 width: 2
             }
 
@@ -134,19 +130,13 @@ Rectangle{
                     topPadding: 0
                     text: qsTr("The blockchain is downloaded to your computer. Provides higher security and requires more local storage.") + translationManager.emptyString
                     width: parent.width - (localNodeIcon.width + localNodeIcon.anchors.leftMargin + anchors.leftMargin)
-
-                    // @TODO: Legacy. Remove after Qt 5.8.
-                    // https://stackoverflow.com/questions/41990013
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: false
-                    }
-                }   
+                }
             }
 
             MouseArea {
                 cursorShape: Qt.PointingHandCursor
                 anchors.fill: parent
+                enabled: persistentSettings.useRemoteNode
                 onClicked: {
                     persistentSettings.useRemoteNode = false;
                     appWindow.disconnectRemoteNode();
@@ -175,7 +165,7 @@ Rectangle{
                 Layout.fillHeight: true
                 anchors.top: parent.top
                 anchors.bottom: parent.bottom
-                color: DinastycoinComponents.Style.blackTheme ? "white" : "darkgrey"
+                color: "darkgrey"
                 width: 2
             }
 
@@ -233,18 +223,12 @@ Rectangle{
                     topPadding: 0
                     text: qsTr("Uses a third-party server to connect to the Dinastycoin network. Less secure, but easier on your computer.") + translationManager.emptyString
                     width: parent.width - (remoteNodeIcon.width + remoteNodeIcon.anchors.leftMargin + anchors.leftMargin)
-
-                    // @TODO: Legacy. Remove after Qt 5.8.
-                    // https://stackoverflow.com/questions/41990013
-                    MouseArea {
-                        anchors.fill: parent
-                        enabled: false
-                    }
                 }
 
                 MouseArea {
                     cursorShape: Qt.PointingHandCursor
                     anchors.fill: parent
+                    enabled: !persistentSettings.useRemoteNode
                     onClicked: {
                         appWindow.connectRemoteNode();
                     }
@@ -264,100 +248,16 @@ Rectangle{
             }
         }
 
-        ColumnLayout {
-            id: remoteNodeLayout
-            anchors.margins: 0
-            spacing: 20
-            Layout.fillWidth: true
-            Layout.topMargin: 20
+        DinastycoinComponents.WarningBox {
+            Layout.topMargin: 46
+            text: qsTr("To find a remote node, type 'Dinastycoin remote node' into your favorite search engine. Please ensure the node is run by a trusted third-party.") + translationManager.emptyString
             visible: persistentSettings.useRemoteNode
+        }
 
-            DinastycoinComponents.WarningBox {
-                Layout.topMargin: 26
-                Layout.bottomMargin: 6
-                text: qsTr("To find a remote node, type 'Dinastycoin remote node' into your favorite search engine. Please ensure the node is run by a trusted third-party.") + translationManager.emptyString
-            }
-
-            DinastycoinComponents.RemoteNodeEdit {
-                id: remoteNodeEdit
-                Layout.minimumWidth: 100
-                placeholderFontSize: 15
-
-                daemonAddrLabelText: qsTr("Address")
-                daemonPortLabelText: qsTr("Port")
-
-                property var rna: persistentSettings.remoteNodeAddress
-                daemonAddrText: rna.search(":") != -1 ? rna.split(":")[0].trim() : ""
-                daemonPortText: rna.search(":") != -1 ? (rna.split(":")[1].trim() == "") ? appWindow.getDefaultDaemonRpcPort(persistentSettings.nettype) : rna.split(":")[1] : ""
-                onEditingFinished: {
-                    persistentSettings.remoteNodeAddress = remoteNodeEdit.getAddress();
-                    console.log("setting remote node to " + persistentSettings.remoteNodeAddress);
-                    if (persistentSettings.is_trusted_daemon) {
-                        persistentSettings.is_trusted_daemon = !persistentSettings.is_trusted_daemon
-                        currentWallet.setTrustedDaemon(persistentSettings.is_trusted_daemon)
-                        setTrustedDaemonCheckBox.checked = !setTrustedDaemonCheckBox.checked
-                        appWindow.showStatusMessage(qsTr("Remote node updated. Trusted daemon has been reset. Mark again, if desired."), 8);
-                    }
-                }
-            }
-
-            GridLayout {
-                columns: 2
-                columnSpacing: 32
-
-                DinastycoinComponents.LineEdit {
-                    id: daemonUsername
-                    Layout.fillWidth: true
-                    labelText: qsTr("Daemon username") + translationManager.emptyString
-                    text: persistentSettings.daemonUsername
-                    placeholderText: qsTr("(optional)") + translationManager.emptyString
-                    placeholderFontSize: 15
-                    labelFontSize: 14
-                    fontSize: 15
-                }
-
-                DinastycoinComponents.LineEdit {
-                    id: daemonPassword
-                    Layout.fillWidth: true
-                    labelText: qsTr("Daemon password") + translationManager.emptyString
-                    text: persistentSettings.daemonPassword
-                    placeholderText: qsTr("Password") + translationManager.emptyString
-                    echoMode: TextInput.Password
-                    placeholderFontSize: 15
-                    labelFontSize: 14
-                    fontSize: 15
-                }
-            }
-
-            DinastycoinComponents.CheckBox {
-                id: setTrustedDaemonCheckBox
-                checked: persistentSettings.is_trusted_daemon
-                onClicked: {
-                    persistentSettings.is_trusted_daemon = !persistentSettings.is_trusted_daemon
-                    currentWallet.setTrustedDaemon(persistentSettings.is_trusted_daemon)
-                }
-                text: qsTr("Mark as Trusted Daemon") + translationManager.emptyString
-                width: 600
-                Layout.fillWidth: true
-            }
-
-            DinastycoinComponents.StandardButton {
-                id: btnConnectRemote
-                enabled: remoteNodeEdit.isValid()
-                small: true
-                text: qsTr("Connect") + translationManager.emptyString
-                onClicked: {
-                    // Update daemon login
-                    persistentSettings.remoteNodeAddress = remoteNodeEdit.getAddress();
-                    persistentSettings.daemonUsername = daemonUsername.text;
-                    persistentSettings.daemonPassword = daemonPassword.text;
-                    persistentSettings.useRemoteNode = true
-
-                    currentWallet.setDaemonLogin(persistentSettings.daemonUsername, persistentSettings.daemonPassword);
-
-                    appWindow.connectRemoteNode()
-                }
-            }
+        DinastycoinComponents.RemoteNodeList {
+            Layout.fillWidth: true
+            Layout.topMargin: 26
+            visible: persistentSettings.useRemoteNode
         }
 
         ColumnLayout {
@@ -387,15 +287,13 @@ Rectangle{
                     fontSize: 15
                     labelFontSize: 14
                     property string style: "<style type='text/css'>a {cursor:pointer;text-decoration: none; color: #FF6C3C}</style>"
-                    labelText: qsTr("Blockchain location") + style + qsTr(" <a href='#'> (change)</a>") + translationManager.emptyString
+                    labelText: qsTr("Blockchain location") + style + " <a href='#'> (%1)</a>".arg(qsTr("Change")) + translationManager.emptyString
+                    labelButtonText: qsTr("Reset") + translationManager.emptyString
+                    labelButtonVisible: text
                     placeholderText: qsTr("(default)") + translationManager.emptyString
                     placeholderFontSize: 15
                     readOnly: true
-                    text: {
-                        if(persistentSettings.blockchainDataDir.length > 0){
-                            return persistentSettings.blockchainDataDir;
-                        } else { return "" }
-                    }
+                    text: persistentSettings.blockchainDataDir
                     addressValidation: false
                     onInputLabelLinkActivated: {
                         //mouse.accepted = false
@@ -405,6 +303,7 @@ Rectangle{
                         blockchainFileDialog.open();
                         blockchainFolder.focus = true;
                     }
+                    onLabelButtonClicked: persistentSettings.blockchainDataDir = ""
                 }
             }
 
@@ -419,7 +318,12 @@ Rectangle{
                 placeholderFontSize: 15
                 text: persistentSettings.daemonFlags
                 addressValidation: false
-                onEditingFinished: persistentSettings.daemonFlags = daemonFlags.text;
+                error: text.match(/(^|\s)--(data-dir|bootstrap-daemon-address|non-interactive)/)
+                onEditingFinished: {
+                    if (!daemonFlags.error) {
+                        persistentSettings.daemonFlags = daemonFlags.text;
+                    }
+                }
             }
 
             RowLayout {
@@ -433,17 +337,9 @@ Rectangle{
                         Layout.minimumWidth: 100
                         Layout.bottomMargin: 20
 
-                        daemonAddrLabelText: qsTr("Bootstrap Address")
-                        daemonPortLabelText: qsTr("Bootstrap Port")
-                        daemonAddrText: persistentSettings.bootstrapNodeAddress.split(":")[0].trim()
-                        daemonPortText: {
-                            var node_split = persistentSettings.bootstrapNodeAddress.split(":");
-                            if(node_split.length == 2){
-                                (node_split[1].trim() == "") ? appWindow.getDefaultDaemonRpcPort(persistentSettings.nettype) : node_split[1];
-                            } else {
-                                return ""
-                            }
-                        }
+                        daemonAddrLabelText: qsTr("Bootstrap Address") + translationManager.emptyString
+                        daemonPortLabelText: qsTr("Bootstrap Port") + translationManager.emptyString
+                        initialAddress: persistentSettings.bootstrapNodeAddress
                         onEditingFinished: {
                             if (daemonAddrText == "auto") {
                                 persistentSettings.bootstrapNodeAddress = daemonAddrText;
@@ -455,7 +351,7 @@ Rectangle{
                     }
                 }
             }
-        } 
+        }
     }
 }
 

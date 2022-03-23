@@ -42,6 +42,7 @@ class TransactionInfo : public QObject
     Q_PROPERTY(Direction direction READ direction)
     Q_PROPERTY(bool isPending READ isPending)
     Q_PROPERTY(bool isFailed READ isFailed)
+    Q_PROPERTY(bool isCoinbase READ isCoinbase)
     Q_PROPERTY(double amount READ amount)
     Q_PROPERTY(quint64 atomicAmount READ atomicAmount)
     Q_PROPERTY(QString displayAmount READ displayAmount)
@@ -57,6 +58,7 @@ class TransactionInfo : public QObject
     Q_PROPERTY(QString date READ date)
     Q_PROPERTY(QString time READ time)
     Q_PROPERTY(QString paymentId READ paymentId)
+    Q_PROPERTY(QString description READ description)
     Q_PROPERTY(QString destinations_formatted READ destinations_formatted)
 
 public:
@@ -71,6 +73,7 @@ public:
     Direction  direction() const;
     bool isPending() const;
     bool isFailed() const;
+    bool isCoinbase() const;
     double amount() const;
     quint64 atomicAmount() const;
     QString displayAmount() const;
@@ -87,21 +90,31 @@ public:
     QString date() const;
     QString time() const;
     QString paymentId() const;
+    QString description() const;
     //! only applicable for output transactions
     //! used in tx details popup
     QString destinations_formatted() const;
-    //! Could be useful later when addressbook is implemented
-    Q_INVOKABLE QList<Transfer*> transfers() const;
 private:
-    explicit TransactionInfo(Dinastycoin::TransactionInfo * pimpl, QObject *parent = 0);
+    explicit TransactionInfo(const Dinastycoin::TransactionInfo *pimpl, QObject *parent = 0);
 private:
     friend class TransactionHistory;
-    Dinastycoin::TransactionInfo * m_pimpl;
     mutable QList<Transfer*> m_transfers;
+    quint64 m_amount;
+    quint64 m_blockHeight;
+    quint64 m_confirmations;
+    Direction m_direction;
+    bool m_failed;
+    quint64 m_fee;
+    QString m_hash;
+    QString m_label;
+    QString m_paymentId;
+    QString m_description;
+    bool m_pending;
+    bool m_coinbase;
+    quint32 m_subaddrAccount;
+    QSet<quint32> m_subaddrIndex;
+    QDateTime m_timestamp;
+    quint64 m_unlockTime;
 };
-
-// in order to wrap it to QVariant
-Q_DECLARE_METATYPE(TransactionInfo*)
-
 
 #endif // TRANSACTIONINFO_H

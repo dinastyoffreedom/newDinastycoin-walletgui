@@ -29,7 +29,10 @@
 #ifndef SUBADDRESS_H
 #define SUBADDRESS_H
 
+#include <functional>
+
 #include <wallet/api/wallet2_api.h>
+#include <QReadWriteLock>
 #include <QObject>
 #include <QList>
 #include <QDateTime>
@@ -38,8 +41,8 @@ class Subaddress : public QObject
 {
     Q_OBJECT
 public:
-    Q_INVOKABLE QList<Dinastycoin::SubaddressRow*> getAll(bool update = false) const;
-    Q_INVOKABLE Dinastycoin::SubaddressRow * getRow(int index) const;
+    Q_INVOKABLE void getAll() const;
+    Q_INVOKABLE bool getRow(int index, std::function<void (Dinastycoin::SubaddressRow &row)> callback) const;
     Q_INVOKABLE void addRow(quint32 accountIndex, const QString &label) const;
     Q_INVOKABLE void setLabel(quint32 accountIndex, quint32 addressIndex, const QString &label) const;
     Q_INVOKABLE void refresh(quint32 accountIndex) const;
@@ -54,6 +57,7 @@ public slots:
 private:
     explicit Subaddress(Dinastycoin::Subaddress * subaddressImpl, QObject *parent);
     friend class Wallet;
+    mutable QReadWriteLock m_lock;
     Dinastycoin::Subaddress * m_subaddressImpl;
     mutable QList<Dinastycoin::SubaddressRow*> m_rows;
 };

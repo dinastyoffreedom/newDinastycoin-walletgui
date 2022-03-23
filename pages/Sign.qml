@@ -89,8 +89,7 @@ Rectangle {
         id: mainLayout
         Layout.fillWidth: true
         anchors.margins: 20
-        anchors.topMargin: 40
-
+        anchors.topMargin: 0
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.right: parent.right
@@ -187,7 +186,6 @@ Rectangle {
                     readOnly: false
                     onTextChanged: signSignatureLine.text = ''
                     wrapMode: Text.WrapAnywhere
-                    pasteButton: true
                 }
             }
 
@@ -302,7 +300,6 @@ Rectangle {
                 readOnly: false
                 wrapMode: Text.WrapAnywhere
                 text: ''
-                pasteButton: true
             }
 
             RowLayout {
@@ -344,7 +341,6 @@ Rectangle {
                 placeholderText: qsTr("Enter the Dinastycoin Address (example: 44AFFq5kSiGBoZ...)") + translationManager.emptyString
                 wrapMode: Text.WrapAnywhere
                 text: ''
-                pasteButton: true
             }
 
             DinastycoinComponents.LineEditMulti {
@@ -354,7 +350,6 @@ Rectangle {
                 placeholderFontSize: 16
                 placeholderText: qsTr("Enter the signature to verify") + translationManager.emptyString
                 Layout.fillWidth: true
-                pasteButton: true
                 wrapMode: Text.WrapAnywhere
                 text: ''
             }

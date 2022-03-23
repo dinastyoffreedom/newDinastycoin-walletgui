@@ -58,13 +58,9 @@ Rectangle {
     signal historyClicked()
     signal transferClicked()
     signal receiveClicked()
-    signal txkeyClicked()
-    signal sharedringdbClicked()
+    signal advancedClicked()
     signal settingsClicked()
     signal addressBookClicked()
-    signal miningClicked()
-    signal signClicked()
-    signal merchantClicked()
     signal accountClicked()
 
     function selectItem(pos) {
@@ -72,12 +68,7 @@ Rectangle {
         if(pos === "History") menuColumn.previousButton = historyButton
         else if(pos === "Transfer") menuColumn.previousButton = transferButton
         else if(pos === "Receive")  menuColumn.previousButton = receiveButton
-        else if(pos === "Merchant")  menuColumn.previousButton = merchantButton
         else if(pos === "AddressBook") menuColumn.previousButton = addressBookButton
-        else if(pos === "Mining") menuColumn.previousButton = miningButton
-        else if(pos === "TxKey")  menuColumn.previousButton = txkeyButton
-        else if(pos === "SharedRingDB")  menuColumn.previousButton = sharedringdbButton
-        else if(pos === "Sign") menuColumn.previousButton = signButton
         else if(pos === "Settings") menuColumn.previousButton = settingsButton
         else if(pos === "Advanced") menuColumn.previousButton = advancedButton
         else if(pos === "Account") menuColumn.previousButton = accountButton
@@ -223,7 +214,7 @@ Rectangle {
                 DinastycoinComponents.Label {
                     fontSize: 16
                     visible: isSyncing
-                    text: qsTr("Syncing...")
+                    text: qsTr("Syncing...") + translationManager.emptyString
                     color: DinastycoinComponents.Style.blackTheme ? "white" : "black"
                     anchors.left: parent.left
                     anchors.leftMargin: 20
@@ -265,6 +256,10 @@ Rectangle {
                     anchors.leftMargin: 58
                     anchors.baseline: currencyLabel.baseline
                     color: DinastycoinComponents.Style.blackTheme ? "white" : "black"
+                    Binding on color {
+                        when: balancePart1MouseArea.containsMouse || balancePart2MouseArea.containsMouse
+                        value: DinastycoinComponents.Style.orange
+                    }
                     text: {
                         if (persistentSettings.fiatPriceEnabled && persistentSettings.fiatPriceToggle) {
                             return balanceFiatString.split('.')[0] + "."
@@ -286,14 +281,6 @@ Rectangle {
                         hoverEnabled: true
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onEntered: {
-                            balancePart1.color = DinastycoinComponents.Style.orange
-                            balancePart2.color = DinastycoinComponents.Style.orange
-                        }
-                        onExited: {
-                            balancePart1.color = Qt.binding(function() { return DinastycoinComponents.Style.blackTheme ? "white" : "black" })
-                            balancePart2.color = Qt.binding(function() { return DinastycoinComponents.Style.blackTheme ? "white" : "black" })
-                        }
                         onClicked: {
                                 console.log("Copied to clipboard");
                                 clipboard.setText(balancePart1.text + balancePart2.text);
@@ -307,7 +294,7 @@ Rectangle {
                     anchors.left: balancePart1.right
                     anchors.leftMargin: 2
                     anchors.baseline: currencyLabel.baseline
-                    color: DinastycoinComponents.Style.blackTheme ? "white" : "black"
+                    color: balancePart1.color
                     text: {
                         if (persistentSettings.fiatPriceEnabled && persistentSettings.fiatPriceToggle) {
                             return balanceFiatString.split('.')[1]
@@ -317,11 +304,10 @@ Rectangle {
                     }
                     font.pixelSize: 16
                     MouseArea {
+                        id: balancePart2MouseArea
                         hoverEnabled: true
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onEntered: balancePart1MouseArea.entered()
-                        onExited: balancePart1MouseArea.exited()
                         onClicked: balancePart1MouseArea.clicked(mouse)
                     }
                 }
@@ -348,8 +334,9 @@ Rectangle {
             id:flicker
             contentHeight: menuColumn.height
             anchors.top: parent.top
-            anchors.bottom: networkStatus.top
+            anchors.bottom: progressBar.visible ? progressBar.top : networkStatus.top
             width: parent.width
+            boundsBehavior: isMac ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
             clip: true
 
         Column {
@@ -364,7 +351,7 @@ Rectangle {
             DinastycoinComponents.MenuButtonDivider {
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 20
             }
 
             // ------------- Account tab ---------------
@@ -373,8 +360,8 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 text: qsTr("Account") + translationManager.emptyString
-                symbol: qsTr("T") + translationManager.emptyString
-                dotColor: "#44AAFF"
+                symbol: (isMac ? "⌃" : qsTr("Ctrl+")) + "T" + translationManager.emptyString
+
                 onClicked: {
                     parent.previousButton.checked = false
                     parent.previousButton = accountButton
@@ -386,7 +373,7 @@ Rectangle {
                 visible: accountButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 20
             }
 
             // ------------- Transfer tab ---------------
@@ -395,8 +382,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 text: qsTr("Send") + translationManager.emptyString
-                symbol: qsTr("S") + translationManager.emptyString
-                dotColor: "#FF6C3C"
+                symbol: (isMac ? "⌃" : qsTr("Ctrl+")) + "S" + translationManager.emptyString
                 onClicked: {
                     parent.previousButton.checked = false
                     parent.previousButton = transferButton
@@ -408,7 +394,7 @@ Rectangle {
                 visible: transferButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 20
             }
 
             // ------------- AddressBook tab ---------------
@@ -418,8 +404,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 text: qsTr("Address book") + translationManager.emptyString
-                symbol: qsTr("B") + translationManager.emptyString
-                dotColor: "#FF4F41"
+                symbol: (isMac ? "⌃" : qsTr("Ctrl+")) + "B" + translationManager.emptyString
                 under: transferButton
                 onClicked: {
                     parent.previousButton.checked = false
@@ -432,7 +417,7 @@ Rectangle {
                 visible: addressBookButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 20
             }
 
             // ------------- Receive tab ---------------
@@ -441,8 +426,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 text: qsTr("Receive") + translationManager.emptyString
-                symbol: qsTr("R") + translationManager.emptyString
-                dotColor: "#AAFFBB"
+                symbol: (isMac ? "⌃" : qsTr("Ctrl+")) + "R" + translationManager.emptyString
                 onClicked: {
                     parent.previousButton.checked = false
                     parent.previousButton = receiveButton
@@ -454,32 +438,7 @@ Rectangle {
                 visible: receiveButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 16
-            }
-
-            // ------------- Merchant tab ---------------
-
-            DinastycoinComponents.MenuButton {
-                id: merchantButton
-                visible: appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                text: qsTr("Merchant") + translationManager.emptyString
-                symbol: qsTr("U") + translationManager.emptyString
-                dotColor: "#FF4F41"
-                under: receiveButton
-                onClicked: {
-                    parent.previousButton.checked = false
-                    parent.previousButton = merchantButton
-                    panel.merchantClicked()
-                }
-            }
-
-            DinastycoinComponents.MenuButtonDivider {
-                visible: merchantButton.present && appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 20
             }
 
             // ------------- History tab ---------------
@@ -489,8 +448,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 text: qsTr("Transactions") + translationManager.emptyString
-                symbol: qsTr("H") + translationManager.emptyString
-                dotColor: "#6B0072"
+                symbol: (isMac ? "⌃" : qsTr("Ctrl+")) + "H" + translationManager.emptyString
                 onClicked: {
                     parent.previousButton.checked = false
                     parent.previousButton = historyButton
@@ -502,7 +460,7 @@ Rectangle {
                 visible: historyButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 20
             }
 
             // ------------- Advanced tab ---------------
@@ -512,11 +470,11 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 text: qsTr("Advanced") + translationManager.emptyString
-                symbol: qsTr("D") + translationManager.emptyString
-                dotColor: "#FFD781"
+                symbol: (isMac ? "⌃" : qsTr("Ctrl+")) + "D" + translationManager.emptyString
                 onClicked: {
                     parent.previousButton.checked = false
                     parent.previousButton = advancedButton
+                    panel.advancedClicked()
                 }
             }
 
@@ -524,103 +482,7 @@ Rectangle {
                 visible: advancedButton.present && appWindow.walletMode >= 2
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 16
-            }
-
-            // ------------- Mining tab ---------------
-            DinastycoinComponents.MenuButton {
-                id: miningButton
-                visible: !isAndroid && !isIOS && appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                text: qsTr("Mining") + translationManager.emptyString
-                symbol: qsTr("M") + translationManager.emptyString
-                dotColor: "#FFD781"
-                under: advancedButton
-                onClicked: {
-                    parent.previousButton.checked = false
-                    parent.previousButton = miningButton
-                    panel.miningClicked()
-                }
-            }
-
-            DinastycoinComponents.MenuButtonDivider {
-                visible: miningButton.present && appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 16
-            }
-
-            // ------------- TxKey tab ---------------
-            DinastycoinComponents.MenuButton {
-                id: txkeyButton
-                visible: appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                text: qsTr("Prove/check") + translationManager.emptyString
-                symbol: qsTr("K") + translationManager.emptyString
-                dotColor: "#FFD781"
-                under: advancedButton
-                onClicked: {
-                    parent.previousButton.checked = false
-                    parent.previousButton = txkeyButton
-                    panel.txkeyClicked()
-                }
-            }
-
-            DinastycoinComponents.MenuButtonDivider {
-                visible: txkeyButton.present && appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 16
-            }
-
-            // ------------- Shared RingDB tab ---------------
-            DinastycoinComponents.MenuButton {
-                id: sharedringdbButton
-                visible: appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                text: qsTr("Shared RingDB") + translationManager.emptyString
-                symbol: qsTr("G") + translationManager.emptyString
-                dotColor: "#FFD781"
-                under: advancedButton
-                onClicked: {
-                    parent.previousButton.checked = false
-                    parent.previousButton = sharedringdbButton
-                    panel.sharedringdbClicked()
-                }
-            }
-
-            DinastycoinComponents.MenuButtonDivider {
-                visible: sharedringdbButton.present && appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 16
-            }
-
-            // ------------- Sign/verify tab ---------------
-            DinastycoinComponents.MenuButton {
-                id: signButton
-                visible: appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                text: qsTr("Sign/verify") + translationManager.emptyString
-                symbol: qsTr("I") + translationManager.emptyString
-                dotColor: "#FFD781"
-                under: advancedButton
-                onClicked: {
-                    parent.previousButton.checked = false
-                    parent.previousButton = signButton
-                    panel.signClicked()
-                }
-            }
-
-            DinastycoinComponents.MenuButtonDivider {
-                visible: signButton.present && appWindow.walletMode >= 2
-                anchors.left: parent.left
-                anchors.right: parent.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 20
             }
 
             // ------------- Settings tab ---------------
@@ -629,8 +491,7 @@ Rectangle {
                 anchors.left: parent.left
                 anchors.right: parent.right
                 text: qsTr("Settings") + translationManager.emptyString
-                symbol: qsTr("E") + translationManager.emptyString
-                dotColor: "#36B25C"
+                symbol: (isMac ? "⌃" : qsTr("Ctrl+")) + "E" + translationManager.emptyString
                 onClicked: {
                     parent.previousButton.checked = false
                     parent.previousButton = settingsButton
@@ -642,7 +503,7 @@ Rectangle {
                 visible: settingsButton.present
                 anchors.left: parent.left
                 anchors.right: parent.right
-                anchors.leftMargin: 16
+                anchors.leftMargin: 20
             }
 
         } // Column
@@ -655,20 +516,9 @@ Rectangle {
             anchors.right: parent.right
             anchors.leftMargin: 0
             anchors.rightMargin: 0
-            anchors.bottom: networkStatus.top;
+            anchors.bottom: progressBar.visible ? progressBar.top : networkStatus.top
             height: 10
             color: "transparent"
-        }
-
-        DinastycoinComponents.NetworkStatusItem {
-            id: networkStatus
-            anchors.left: parent.left
-            anchors.right: parent.right
-            anchors.leftMargin: 5
-            anchors.rightMargin: 0
-            anchors.bottom: (progressBar.visible)? progressBar.top : parent.bottom;
-            connected: Wallet.ConnectionStatus_Disconnected
-            height: 48
         }
 
         DinastycoinComponents.ProgressBar {
@@ -678,17 +528,29 @@ Rectangle {
             anchors.bottom: daemonProgressBar.top
             height: 48
             syncType: qsTr("Wallet") + translationManager.emptyString
-            visible: networkStatus.connected
+            visible: !appWindow.disconnected
         }
 
         DinastycoinComponents.ProgressBar {
             id: daemonProgressBar
             anchors.left: parent.left
             anchors.right: parent.right
-            anchors.bottom: parent.bottom
+            anchors.bottom: networkStatus.top
             syncType: qsTr("Daemon") + translationManager.emptyString
-            visible: networkStatus.connected
+            visible: !appWindow.disconnected
             height: 62
+        }
+        
+        DinastycoinComponents.NetworkStatusItem {
+            id: networkStatus
+            anchors.left: parent.left
+            anchors.right: parent.right
+            anchors.leftMargin: 5
+            anchors.rightMargin: 0
+            anchors.bottom: parent.bottom
+            anchors.bottomMargin: 5
+            connected: Wallet.ConnectionStatus_Disconnected
+            height: 48
         }
     }
 }

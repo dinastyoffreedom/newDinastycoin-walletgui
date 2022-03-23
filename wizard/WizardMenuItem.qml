@@ -39,6 +39,8 @@ RowLayout {
     Layout.fillWidth: true
     Layout.bottomMargin: 10
     property alias imageIcon: icon.source
+    property bool checkbox: false
+    property alias checked: checkboxItem.checked
     property alias headerText: header.text
     property alias bodyText: body.text
     signal menuClicked();
@@ -48,16 +50,24 @@ RowLayout {
         Layout.preferredWidth: 70
         Layout.preferredHeight: 70
 
+        DinastycoinComponents.CheckBox {
+            id: checkboxItem
+            anchors.horizontalCenter: parent.horizontalCenter
+            anchors.verticalCenter: parent.verticalCenter
+            toggleOnClick: false
+            visible: rowlayout.checkbox
+        }
+
         Image {
             id: icon
-            visible: !isOpenGL || DinastycoinComponents.Style.blackTheme
+            visible: !rowlayout.checkbox && (!isOpenGL || DinastycoinComponents.Style.blackTheme)
             anchors.horizontalCenter: parent.horizontalCenter
             anchors.verticalCenter: parent.verticalCenter
             source: ""
         }
 
         DropShadow {
-            visible: isOpenGL && !DinastycoinComponents.Style.blackTheme
+            visible: !rowlayout.checkbox && (isOpenGL && !DinastycoinComponents.Style.blackTheme)
             anchors.fill: icon
             horizontalOffset: 3
             verticalOffset: 3

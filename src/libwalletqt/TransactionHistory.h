@@ -29,8 +29,11 @@
 #ifndef TRANSACTIONHISTORY_H
 #define TRANSACTIONHISTORY_H
 
+#include <functional>
+
 #include <QObject>
 #include <QList>
+#include <QReadWriteLock>
 #include <QDateTime>
 
 namespace Dinastycoin {
@@ -49,9 +52,8 @@ class TransactionHistory : public QObject
     Q_PROPERTY(bool locked READ locked)
 
 public:
-    Q_INVOKABLE TransactionInfo *transaction(int index);
+    Q_INVOKABLE bool transaction(int index, std::function<void (TransactionInfo &)> callback);
     // Q_INVOKABLE TransactionInfo * transaction(const QString &id);
-    Q_INVOKABLE QList<TransactionInfo*> getAll(quint32 accountIndex) const;
     Q_INVOKABLE void refresh(quint32 accountIndex);
     Q_INVOKABLE QString writeCSV(quint32 accountIndex, QString out);
     quint64 count() const;
@@ -74,6 +76,7 @@ private:
 
 private:
     friend class Wallet;
+    mutable QReadWriteLock m_lock;
     Dinastycoin::TransactionHistory * m_pimpl;
     mutable QList<TransactionInfo*> m_tinfo;
     mutable QDateTime   m_firstDateTime;

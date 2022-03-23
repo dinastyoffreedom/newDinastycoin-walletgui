@@ -56,14 +56,29 @@ Rectangle {
             Layout.alignment: Qt.AlignHCenter
             spacing: 0
 
-            WizardHeader {
-                Layout.bottomMargin: 20
-                title: qsTr("Welcome to Dinastycoin.") + translationManager.emptyString
-                subtitle: ""
+            RowLayout {
+                Layout.fillWidth: true
+                spacing: 10
+
+                WizardHeader {
+                    Layout.bottomMargin: 7
+                    Layout.fillWidth: true
+                    title: qsTr("Welcome to Dinastycoin") + translationManager.emptyString
+                    subtitle: ""
+                }
+
+                DinastycoinComponents.LanguageButton {
+                    Layout.bottomMargin: 8
+                }
             }
 
             WizardMenuItem {
-                headerText: qsTr("Create a new wallet") + translationManager.emptyString
+                headerText: {
+                    var nettype = persistentSettings.nettype;
+                    return qsTr("Create a new wallet") + (nettype === 2 ? " (" + qsTr("stagenet") + ")"
+                                                                        : nettype === 1 ? " (" + qsTr("testnet") + ")"
+                                                                                        : "") + translationManager.emptyString
+                }
                 bodyText: qsTr("Choose this option if this is your first time using Dinastycoin.") + translationManager.emptyString
                 imageIcon: "qrc:///images/create-wallet.png"
 
@@ -84,7 +99,12 @@ Rectangle {
             }
 
             WizardMenuItem {
-                headerText: qsTr("Create a new wallet from hardware") + translationManager.emptyString
+                headerText: {
+                    var nettype = persistentSettings.nettype;
+                    return qsTr("Create a new wallet from hardware") + (nettype === 2 ? " (" + qsTr("stagenet") + ")"
+                                                                        : nettype === 1 ? " (" + qsTr("testnet") + ")"
+                                                                                        : "") + translationManager.emptyString
+                }
                 bodyText: qsTr("Connect your hardware wallet to create a new Dinastycoin wallet.") + translationManager.emptyString
                 imageIcon: "qrc:///images/restore-wallet-from-hardware.png"
 
@@ -110,6 +130,7 @@ Rectangle {
 
                 onMenuClicked: {
                     wizardStateView.state = "wizardOpenWallet1"
+                    wizardStateView.wizardOpenWallet1View.pageRoot.forceActiveFocus();
                 }
             }
 
@@ -147,15 +168,6 @@ Rectangle {
                         wizardController.wizardState = 'wizardModeSelection';
                     }                    
                 }
-
-                DinastycoinComponents.StandardButton {
-                    small: true
-                    text: qsTr("Change language") + translationManager.emptyString
-
-                    onClicked: {
-                        appWindow.toggleLanguageView();
-                    }
-                }
             }
 
             DinastycoinComponents.CheckBox2 {
@@ -180,49 +192,44 @@ Rectangle {
                 columns: 4
                 columnSpacing: 20
                 Layout.fillWidth: true
+                Layout.topMargin: 10
 
-                ColumnLayout {
-                    Layout.topMargin: 4
+                DinastycoinComponents.StandardDropdown {
+                    id: networkTypeDropdown
+                    currentIndex: persistentSettings.nettype
+                    dataModel: networkTypeModel
+                    Layout.maximumWidth: 180
+                    labelText: qsTr("Network") + ":" + translationManager.emptyString
+                    labelFontSize: 14
 
-                    DinastycoinComponents.Label {
-                        text: qsTr("Change Network:") + translationManager.emptyString
-                        fontSize: 14
-                    }
-
-                    DinastycoinComponents.StandardDropdown {
-                        id: networkTypeDropdown
-                        dataModel: networkTypeModel
-                        Layout.fillWidth: true
-                        Layout.maximumWidth: 180
-                        Layout.topMargin: 5
-
-                        onChanged: {
-                            var item = dataModel.get(currentIndex).nettype.toLowerCase();
-                            if(item === "mainnet") {
-                                persistentSettings.nettype = NetworkType.MAINNET
-                            } else if(item === "stagenet"){
-                                persistentSettings.nettype = NetworkType.STAGENET
-                            } else if(item === "testnet"){
-                                persistentSettings.nettype = NetworkType.TESTNET
-                            }
-                            appWindow.disconnectRemoteNode()
+                    onChanged: {
+                        var item = dataModel.get(currentIndex).nettype.toLowerCase();
+                        if(item === "mainnet") {
+                            persistentSettings.nettype = NetworkType.MAINNET
+                        } else if(item === "stagenet"){
+                            persistentSettings.nettype = NetworkType.STAGENET
+                        } else if(item === "testnet"){
+                            persistentSettings.nettype = NetworkType.TESTNET
                         }
+                        appWindow.disconnectRemoteNode()
+                        networkTypeDropdown.currentIndex = Qt.binding(function() { return persistentSettings.nettype });
+                        persistentSettings.wallet_path = ""
                     }
                 }
 
                 DinastycoinComponents.LineEdit {
                     id: kdfRoundsText
-                    Layout.fillWidth: true
+                    Layout.maximumWidth: 180
 
                     labelText: qsTr("Number of KDF rounds:") + translationManager.emptyString
                     labelFontSize: 14
+                    fontSize: 16
                     placeholderFontSize: 16
                     placeholderText: "0"
                     validator: IntValidator { bottom: 1 }
                     text: persistentSettings.kdfRounds ? persistentSettings.kdfRounds : "1"
                     onTextChanged: {
-                        console.log('x');
-                        kdfRoundsText.text = persistentSettings.kdfRounds = parseInt(kdfRoundsText.text) >= 1 ? parseInt(kdfRoundsText.text) : 1;
+                        persistentSettings.kdfRounds = parseInt(kdfRoundsText.text) >= 1 ? parseInt(kdfRoundsText.text) : 1;
                     }
                 }
 
@@ -244,12 +251,10 @@ Rectangle {
         }
     }
 
-    Component.onCompleted: {
-        networkTypeDropdown.currentIndex = persistentSettings.nettype;
-        networkTypeDropdown.update();
-    }
-
     function onPageCompleted(){
         wizardController.walletOptionsIsRecoveringFromDevice = false;
+        if (networkTypeDropdown.currentIndex != 0) {
+            showAdvancedCheckbox.checked = true;
+        }
     }
 }

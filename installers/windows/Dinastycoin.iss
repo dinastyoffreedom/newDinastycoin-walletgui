@@ -1,6 +1,7 @@
-; Dinastycoin DANTE GUI Wallet Installer for Windows
-; Copyright (c) 2017-2019, The Dinastycoin Project
+; Dinastycoin Ghandi GUI Wallet Installer for Windows
+; Copyright (c) 2017-2020, The Dinastycoin Project
 ; See LICENSE
+#define GuiVersion GetFileVersion("bin\dinastycoin-wallet-gui.exe")
 
 [Setup]
 AppName=Dinastycoin GUI Wallet
@@ -8,8 +9,9 @@ AppName=Dinastycoin GUI Wallet
 ; Thus it's important to keep this stable over releases
 ; With a different "AppName" InnoSetup would treat a mere update as a completely new application and thus mess up
 
-AppVersion=1.0
-DefaultDirName={pf}\Dinastycoin GUI Wallet
+AppVersion={#GuiVersion}
+VersionInfoVersion={#GuiVersion}
+DefaultDirName={commonpf}\Dinastycoin GUI Wallet
 DefaultGroupName=Dinastycoin GUI Wallet
 UninstallDisplayIcon={app}\dinastycoin-wallet-gui.exe
 PrivilegesRequired=admin
@@ -39,6 +41,8 @@ UsedUserAreasWarning=no
 ; play a role in only in few cases as the first standard user in a Windows installation does have admin rights.
 ; So, for the time being, this installer simply disregards this problem.
 
+[Messages]
+SetupWindowTitle=%1 {#GuiVersion} Installer
 
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
@@ -58,26 +62,26 @@ Name: "en"; MessagesFile: "compiler:Default.isl"
 ; .exe/.dll file possibly with version info).
 ;
 ; This is far more robust than relying on version info or on file dates (flag "comparetimestamp").
-; As of version 1.0, the Dinastycoin .exe files do not carry version info anyway in their .exe headers.
 ; The only small drawback seems to be somewhat longer update times because each and every file is
 ; copied again, even if already present with correct file date and identical content.
 ;
 ; Note that it would be very dangerous to use "ignoreversion" on files that may be shared with other
 ; applications somehow. Luckily this is no issue here because ALL files are "private" to Dinastycoin.
 
-Source: "ReadMe.htm"; DestDir: "{app}"; Flags: ignoreversion
+Source: {#file AddBackslash(SourcePath) + "ReadMe.htm"}; DestDir: "{app}"; DestName: "ReadMe.htm"; Flags: ignoreversion
 Source: "FinishImage.bmp"; Flags: dontcopy
+Source: "LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Dinastycoin GUI wallet exe and guide
 Source: "bin\dinastycoin-wallet-gui.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-GUI-guide.pdf"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\dinastycoin-gui-wallet-guide.pdf"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Dinastycoin CLI wallet
-Source: "bin\dinastycoin-wallet-cli.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-gen-trusted-multisig.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-wallet-cli.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-gen-trusted-multisig.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Dinastycoin wallet RPC interface implementation
-Source: "bin\dinastycoin-wallet-rpc.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-wallet-rpc.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Dinastycoin daemon
 Source: "bin\dinastycoind.exe"; DestDir: "{app}"; Flags: ignoreversion
@@ -86,16 +90,17 @@ Source: "bin\dinastycoind.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "dinastycoin-daemon.bat"; DestDir: "{app}"; Flags: ignoreversion;
 
 ; Dinastycoin blockchain utilities
-Source: "bin\dinastycoin-blockchain-export.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-import.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-mark-spent-outputs.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-usage.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-import.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-ancestry.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-depth.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-prune-known-spent-data.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-prune.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "bin\dinastycoin-blockchain-stats.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-export.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-import.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-mark-spent-outputs.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-usage.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-import.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-ancestry.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-depth.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-prune-known-spent-data.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-prune.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-blockchain-stats.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "bin\extras\dinastycoin-gen-ssl-cert.exe"; DestDir: "{app}"; Flags: ignoreversion
 
 ; Qt Quick 2D Renderer fallback for systems / environments with "low-level graphics" i.e. without 3D support
 Source: "bin\start-low-graphics-mode.bat"; DestDir: "{app}"; Flags: ignoreversion
@@ -162,6 +167,8 @@ Type: files; Name: "{app}\libssp-0.dll"
 Type: files; Name: "{app}\libhidapi-0.dll"
 Type: files; Name: "{app}\libeay32.dll"
 Type: files; Name: "{app}\ssleay32.dll"
+Type: files; Name: "{app}\start-high-dpi.bat"
+Type: files; Name: "{group}\Utilities\x (Check Blockchain Folder).lnk"
 
 
 [Tasks]
@@ -197,7 +204,7 @@ begin
   // Additional wizard page for entering a special blockchain location
   blockChainDefaultDir := ExpandConstant('{commonappdata}\bitdinastycoin');
   s := 'The default folder to store the Dinastycoin blockchain is ' + blockChainDefaultDir;
-  s := s + '. As this will need more than 74 GB of free space, you may want to use a folder on a different drive.';
+  s := s + '. As this will need more than 90 GB of free space, you may want to use a folder on a different drive.';
   s := s + ' If yes, specify that folder here.';
 
   BlockChainDirPage := CreateInputDirPage(wpSelectDir,
@@ -329,7 +336,7 @@ Name: "{group}\Utilities\Textual (CLI) Wallet"; Filename: "{app}\dinastycoin-wal
 ; Icons for troubleshooting problems / testing / debugging
 ; To show that they are in some way different (not for everyday use), make them visually different
 ; from the others by text, and make them sort at the end by the help of "x" in front 
-Name: "{group}\Utilities\x (Check Blockchain Folder)"; Filename: "{win}\Explorer.exe"; Parameters: {code:BlockChainDir}
+Name: "{group}\Utilities\x (Check Default Blockchain Folder)"; Filename: "{win}\Explorer.exe"; Parameters: {code:BlockChainDir}
 Name: "{group}\Utilities\x (Check Daemon Log)"; Filename: "Notepad"; Parameters: {code:DaemonLog}
 Name: "{group}\Utilities\x (Check Default Wallet Folder)"; Filename: "{win}\Explorer.exe"; Parameters: """{userdocs}\Dinastycoin\wallets"""
 Name: "{group}\Utilities\x (Check GUI Wallet Log)"; Filename: "Notepad"; Parameters: """{userappdata}\dinastycoin-wallet-gui\dinastycoin-wallet-gui.log"""

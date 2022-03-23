@@ -31,6 +31,8 @@
 #include "wallet/api/wallet2_api.h"
 #include "zxcvbn-c/zxcvbn.h"
 #include "QRCodeImageProvider.h"
+#include <QClipboard>
+#include <QGuiApplication>
 #include <QFile>
 #include <QFileInfo>
 #include <QDir>
@@ -41,10 +43,13 @@
 #include <QMutexLocker>
 #include <QString>
 
-class WalletPassphraseListenerImpl : public  Dinastycoin::WalletListener
+#include "qt/updater.h"
+#include "qt/ScopeGuard.h"
+
+class WalletPassphraseListenerImpl : public  Dinastycoin::WalletListener, public PassphraseReceiver
 {
 public:
-  WalletPassphraseListenerImpl(WalletManager * mgr): m_mgr(mgr), m_wallet(nullptr) {}
+  WalletPassphraseListenerImpl(WalletManager * mgr): m_mgr(mgr), m_phelper(mgr) {}
 
   virtual void moneySpent(const std::string &txId, uint64_t amount) override { (void)txId; (void)amount; };
   virtual void moneyReceived(const std::string &txId, uint64_t amount) override { (void)txId; (void)amount; };
@@ -53,55 +58,34 @@ public:
   virtual void updated() override {};
   virtual void refreshed() override {};
 
-  virtual Dinastycoin::optional<std::string> onDevicePassphraseRequest(bool on_device) override
+  virtual void onPassphraseEntered(const QString &passphrase, bool enter_on_device, bool entry_abort) override
   {
       qDebug() << __FUNCTION__;
-      if (on_device) return Dinastycoin::optional<std::string>();
+      m_phelper.onPassphraseEntered(passphrase, enter_on_device, entry_abort);
+  }
 
-      m_mgr->onWalletPassphraseNeeded(m_wallet);
-
-      if (m_mgr->m_passphrase_abort)
-      {
-        throw std::runtime_error("Passphrase entry abort");
-      }
-
-      auto tmpPass = m_mgr->m_passphrase.toStdString();
-      m_mgr->m_passphrase = QString();
-
-      return Dinastycoin::optional<std::string>(tmpPass);
+  virtual Dinastycoin::optional<std::string> onDevicePassphraseRequest(bool & on_device) override
+  {
+      qDebug() << __FUNCTION__;
+      return m_phelper.onDevicePassphraseRequest(on_device);
   }
 
   virtual void onDeviceButtonRequest(uint64_t code) override
   {
-    emit m_mgr->deviceButtonRequest(code);
+      qDebug() << __FUNCTION__;
+      emit m_mgr->deviceButtonRequest(code);
   }
 
   virtual void onDeviceButtonPressed() override
   {
-    emit m_mgr->deviceButtonPressed();
-  }
-
-  virtual void onSetWallet(Dinastycoin::Wallet * wallet) override
-  {
       qDebug() << __FUNCTION__;
-      m_wallet = wallet;
+      emit m_mgr->deviceButtonPressed();
   }
 
 private:
   WalletManager * m_mgr;
-  Dinastycoin::Wallet * m_wallet;
+  PassphraseHelper m_phelper;
 };
-
-WalletManager * WalletManager::m_instance = nullptr;
-
-WalletManager *WalletManager::instance()
-{
-    if (!m_instance) {
-        m_instance = new WalletManager;
-    }
-
-    return m_instance;
-}
 
 Wallet *WalletManager::createWallet(const QString &path, const QString &password,
                                     const QString &language, NetworkType::Type nettype, quint64 kdfRounds)
@@ -121,6 +105,13 @@ Wallet *WalletManager::openWallet(const QString &path, const QString &password, 
 {
     QMutexLocker locker(&m_mutex);
     WalletPassphraseListenerImpl tmpListener(this);
+    m_mutex_passphraseReceiver.lock();
+    m_passphraseReceiver = &tmpListener;
+    m_mutex_passphraseReceiver.unlock();
+    const auto cleanup = sg::make_scope_guard([this]() noexcept {
+        QMutexLocker passphrase_locker(&m_mutex_passphraseReceiver);
+        this->m_passphraseReceiver = nullptr;
+    });
 
     if (m_currentWallet) {
         qDebug() << "Closing open m_currentWallet" << m_currentWallet;
@@ -151,14 +142,14 @@ void WalletManager::openWalletAsync(const QString &path, const QString &password
 }
 
 
-Wallet *WalletManager::recoveryWallet(const QString &path, const QString &memo, NetworkType::Type nettype, quint64 restoreHeight, quint64 kdfRounds)
+Wallet *WalletManager::recoveryWallet(const QString &path, const QString &seed, const QString &seed_offset, NetworkType::Type nettype, quint64 restoreHeight, quint64 kdfRounds)
 {
     QMutexLocker locker(&m_mutex);
     if (m_currentWallet) {
         qDebug() << "Closing open m_currentWallet" << m_currentWallet;
         delete m_currentWallet;
     }
-    Dinastycoin::Wallet * w = m_pimpl->recoveryWallet(path.toStdString(), "", memo.toStdString(), static_cast<Dinastycoin::NetworkType>(nettype), restoreHeight, kdfRounds);
+    Dinastycoin::Wallet * w = m_pimpl->recoveryWallet(path.toStdString(), "", seed.toStdString(), static_cast<Dinastycoin::NetworkType>(nettype), restoreHeight, kdfRounds, seed_offset.toStdString());
     m_currentWallet = new Wallet(w);
     return m_currentWallet;
 }
@@ -180,10 +171,17 @@ Wallet *WalletManager::createWalletFromKeys(const QString &path, const QString &
 }
 
 Wallet *WalletManager::createWalletFromDevice(const QString &path, const QString &password, NetworkType::Type nettype,
-                                              const QString &deviceName, quint64 restoreHeight, const QString &subaddressLookahead)
+                                              const QString &deviceName, quint64 restoreHeight, const QString &subaddressLookahead, quint64 kdfRounds)
 {
     QMutexLocker locker(&m_mutex);
     WalletPassphraseListenerImpl tmpListener(this);
+    m_mutex_passphraseReceiver.lock();
+    m_passphraseReceiver = &tmpListener;
+    m_mutex_passphraseReceiver.unlock();
+    const auto cleanup = sg::make_scope_guard([this]() noexcept {
+        QMutexLocker passphrase_locker(&m_mutex_passphraseReceiver);
+        this->m_passphraseReceiver = nullptr;
+    });
 
     if (m_currentWallet) {
         qDebug() << "Closing open m_currentWallet" << m_currentWallet;
@@ -191,7 +189,7 @@ Wallet *WalletManager::createWalletFromDevice(const QString &path, const QString
         m_currentWallet = NULL;
     }
     Dinastycoin::Wallet * w = m_pimpl->createWalletFromDevice(path.toStdString(), password.toStdString(), static_cast<Dinastycoin::NetworkType>(nettype),
-                                                         deviceName.toStdString(), restoreHeight, subaddressLookahead.toStdString(), 1, &tmpListener);
+                                                         deviceName.toStdString(), restoreHeight, subaddressLookahead.toStdString(), kdfRounds, &tmpListener);
     w->setListener(nullptr);
 
     m_currentWallet = new Wallet(w);
@@ -206,10 +204,10 @@ Wallet *WalletManager::createWalletFromDevice(const QString &path, const QString
 
 
 void WalletManager::createWalletFromDeviceAsync(const QString &path, const QString &password, NetworkType::Type nettype,
-                                                const QString &deviceName, quint64 restoreHeight, const QString &subaddressLookahead)
+                                                const QString &deviceName, quint64 restoreHeight, const QString &subaddressLookahead, quint64 kdfRounds)
 {
-    m_scheduler.run([this, path, password, nettype, deviceName, restoreHeight, subaddressLookahead] {
-        Wallet *wallet = createWalletFromDevice(path, password, nettype, deviceName, restoreHeight, subaddressLookahead);
+    m_scheduler.run([this, path, password, nettype, deviceName, restoreHeight, subaddressLookahead, kdfRounds] {
+        Wallet *wallet = createWalletFromDevice(path, password, nettype, deviceName, restoreHeight, subaddressLookahead, kdfRounds);
         emit walletCreated(wallet);
     });
 }
@@ -255,22 +253,22 @@ QString WalletManager::errorString() const
     return tr("Unknown error");
 }
 
-quint64 WalletManager::maximumAllowedAmount() const
+quint64 WalletManager::maximumAllowedAmount()
 {
     return Dinastycoin::Wallet::maximumAllowedAmount();
 }
 
-QString WalletManager::maximumAllowedAmountAsSting() const
+QString WalletManager::maximumAllowedAmountAsString() const
 {
     return WalletManager::displayAmount(WalletManager::maximumAllowedAmount());
 }
 
-QString WalletManager::displayAmount(quint64 amount) const
+QString WalletManager::displayAmount(quint64 amount)
 {
     return QString::fromStdString(Dinastycoin::Wallet::displayAmount(amount));
 }
 
-quint64 WalletManager::amountFromString(const QString &amount) const
+quint64 WalletManager::amountFromString(const QString &amount)
 {
     return Dinastycoin::Wallet::amountFromString(amount.toStdString());
 }
@@ -278,6 +276,17 @@ quint64 WalletManager::amountFromString(const QString &amount) const
 quint64 WalletManager::amountFromDouble(double amount) const
 {
     return Dinastycoin::Wallet::amountFromDouble(amount);
+}
+
+QString WalletManager::amountsSumFromStrings(const QVector<QString> &amounts)
+{
+    quint64 sum = 0;
+    for (const auto &amountString : amounts)
+    {
+        const quint64 amount = amountFromString(amountString);
+        sum = sum + std::min(maximumAllowedAmount() - sum, amount);
+    }
+    return QString::number(sum);
 }
 
 bool WalletManager::paymentIdValid(const QString &payment_id) const
@@ -408,14 +417,36 @@ QVariantMap WalletManager::parse_uri_to_object(const QString &uri) const
     if (this->parse_uri(uri, address, payment_id, amount, tx_description, recipient_name, unknown_parameters, error)) {
         result.insert("address", address);
         result.insert("payment_id", payment_id);
-        result.insert("amount", amount > 0 ? this->displayAmount(amount) : "");
+        result.insert("amount", amount > 0 ? displayAmount(amount) : "");
         result.insert("tx_description", tx_description);
         result.insert("recipient_name", recipient_name);
+
+        QVariantMap extra_parameters;
+        if (unknown_parameters.size() > 0)
+        {
+            for (const QString &item : unknown_parameters)
+            {
+                const auto parsed_item = item.splitRef("=");
+                if (parsed_item.size() == 2)
+                {
+                    extra_parameters.insert(parsed_item[0].toString(), parsed_item[1].toString());
+                }
+            }
+        }
+        result.insert("extra_parameters", extra_parameters);
     } else {
-        result.insert("error", error);
+        result.insert("error", !error.isEmpty() ? error : tr("Unknown error"));
     }
-    
+
     return result;
+}
+
+QString WalletManager::make_uri(const QString &address, const quint64 &amount, const QString &tx_description, const QString &recipient_name) const
+{
+    QMutexLocker locker(&m_mutex);
+    if (m_currentWallet)
+        return m_currentWallet->make_uri(address, amount, tx_description, recipient_name);
+    return "";
 }
 
 void WalletManager::setLogLevel(int logLevel)
@@ -438,7 +469,6 @@ QUrl WalletManager::localPathToUrl(const QString &path) const
     return QUrl::fromLocalFile(path);
 }
 
-#ifndef DISABLE_PASS_STRENGTH_METER
 double WalletManager::getPasswordStrength(const QString &password) const
 {
     static const char *local_dict[] = {
@@ -453,23 +483,57 @@ double WalletManager::getPasswordStrength(const QString &password) const
     ZxcvbnUnInit();
     return e;
 }
-#endif
 
 bool WalletManager::saveQrCode(const QString &code, const QString &path) const
 {
     QSize size;
-    // 240 <=> mainLayout.qrCodeSize (Receive.qml)
     return QRCodeImageProvider::genQrImage(code, &size).scaled(size.expandedTo(QSize(240, 240)), Qt::KeepAspectRatio).save(path, "PNG", 100);
 }
 
-void WalletManager::checkUpdatesAsync(const QString &software, const QString &subdir)
+void WalletManager::saveQrCodeToClipboard(const QString &code) const
 {
-    m_scheduler.run([this, software, subdir] {
-        emit checkUpdatesComplete(checkUpdates(software, subdir));
-    });
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    QSize size;
+    clipboard->setImage(QRCodeImageProvider::genQrImage(code, &size).scaled(size.expandedTo(QSize(240, 240)), Qt::KeepAspectRatio), QClipboard::Clipboard);
+    clipboard->setImage(QRCodeImageProvider::genQrImage(code, &size).scaled(size.expandedTo(QSize(240, 240)), Qt::KeepAspectRatio), QClipboard::Selection);
 }
 
+void WalletManager::checkUpdatesAsync(
+    const QString &software,
+    const QString &subdir,
+    const QString &buildTag,
+    const QString &version)
+{
+    m_scheduler.run([this, software, subdir, buildTag, version] {
+        const auto updateInfo = Dinastycoin::WalletManager::checkUpdates(
+            software.toStdString(),
+            subdir.toStdString(),
+            buildTag.toStdString().c_str(),
+            version.toStdString().c_str());
+        if (!std::get<0>(updateInfo))
+        {
+            return;
+        }
 
+        const QString version = QString::fromStdString(std::get<1>(updateInfo));
+        const QByteArray hashFromDns = QByteArray::fromHex(QString::fromStdString(std::get<2>(updateInfo)).toUtf8());
+        const QString downloadUrl = QString::fromStdString(std::get<4>(updateInfo));
+
+        try
+        {
+            const QString binaryFilename = QUrl(downloadUrl).fileName();
+            QPair<QString, QString> signers;
+            const QString signedHash = Updater().fetchSignedHash(binaryFilename, hashFromDns, signers).toHex();
+
+            qInfo() << "Update found" << version << downloadUrl << "hash" << signedHash << "signed by" << signers;
+            emit checkUpdatesComplete(version, downloadUrl, signedHash, signers.first, signers.second);
+        }
+        catch (const std::exception &e)
+        {
+            qCritical() << "Failed to fetch and verify signed hash:" << e.what();
+        }
+    });
+}
 
 QString WalletManager::checkUpdates(const QString &software, const QString &subdir) const
 {
@@ -500,6 +564,7 @@ bool WalletManager::clearWalletCache(const QString &wallet_path) const
 
 WalletManager::WalletManager(QObject *parent)
     : QObject(parent)
+    , m_passphraseReceiver(nullptr)
     , m_scheduler(this)
 {
     m_pimpl =  Dinastycoin::WalletManagerFactory::getWalletManager();
@@ -510,22 +575,39 @@ WalletManager::~WalletManager()
     m_scheduler.shutdownWaitForFinished();
 }
 
-void WalletManager::onWalletPassphraseNeeded(Dinastycoin::Wallet *)
+void WalletManager::onWalletPassphraseNeeded(bool on_device)
 {
-    m_mutex_pass.lock();
-    m_passphrase_abort = false;
-    emit this->walletPassphraseNeeded();
-
-    m_cond_pass.wait(&m_mutex_pass);
-    m_mutex_pass.unlock();
+    emit this->walletPassphraseNeeded(on_device);
 }
 
-void WalletManager::onPassphraseEntered(const QString &passphrase, bool entry_abort)
+void WalletManager::onPassphraseEntered(const QString &passphrase, bool enter_on_device, bool entry_abort)
 {
-    m_mutex_pass.lock();
-    m_passphrase = passphrase;
-    m_passphrase_abort = entry_abort;
+    QMutexLocker locker(&m_mutex_passphraseReceiver);
+    if (m_passphraseReceiver != nullptr)
+    {
+        m_passphraseReceiver->onPassphraseEntered(passphrase, enter_on_device, entry_abort);
+    }
+}
 
-    m_cond_pass.wakeAll();
-    m_mutex_pass.unlock();
+QString WalletManager::proxyAddress() const
+{
+    QMutexLocker locker(&m_proxyMutex);
+    return m_proxyAddress;
+}
+
+void WalletManager::setProxyAddress(QString address)
+{
+    m_scheduler.run([this, address] {
+        {
+            QMutexLocker locker(&m_proxyMutex);
+
+            if (!m_pimpl->setProxy(address.toStdString()))
+            {
+                qCritical() << "Failed to set proxy address" << address;
+            }
+
+            m_proxyAddress = std::move(address);
+        }
+        emit proxyAddressChanged();
+    });
 }

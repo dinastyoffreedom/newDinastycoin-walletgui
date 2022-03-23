@@ -42,11 +42,6 @@ Rectangle {
     property string viewName: "wizardRestoreWallet3"
     property int recoveryMode: 1
 
-    function verify() {
-        // @TODO: check if walletName already exists in walletLocation
-        return walletName.text !== '';
-    }
-
     ColumnLayout {
         id: pageRoot
         Layout.alignment: Qt.AlignHCenter;
@@ -74,7 +69,7 @@ Rectangle {
 
             WizardNav {
                 progressSteps: 4
-                progress: 3
+                progress: 2
                 onPrevClicked: {
                     wizardStateView.state = "wizardRestoreWallet2";
                 }

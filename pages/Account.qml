@@ -48,17 +48,19 @@ Rectangle {
     color: "transparent"
     property var model
     property alias accountHeight: mainLayout.height
+    property alias balanceAllText: balanceAll.text
+    property alias unlockedBalanceAllText: unlockedBalanceAll.text
     property bool selectAndSend: false
     property int currentAccountIndex
 
     function renameSubaddressAccountLabel(_index){
         inputDialog.labelText = qsTr("Set the label of the selected account:") + translationManager.emptyString;
-        inputDialog.inputText = appWindow.currentWallet.getSubaddressLabel(_index, 0);
         inputDialog.onAcceptedCallback = function() {
-            appWindow.currentWallet.subaddressAccount.setLabel(_index, inputDialog.inputText)
+            appWindow.currentWallet.setSubaddressLabel(_index, 0, inputDialog.inputText)
+            appWindow.currentWallet.subaddressAccount.refresh()
         }
         inputDialog.onRejectedCallback = null;
-        inputDialog.open()
+        inputDialog.open(appWindow.currentWallet.getSubaddressLabel(_index, 0))
     }
 
     Clipboard { id: clipboard }
@@ -101,6 +103,7 @@ Rectangle {
 
                 DinastycoinComponents.TextPlain {
                     id: balanceAll
+                    Layout.rightMargin: 87
                     font.family: DinastycoinComponents.Style.fontMonoRegular.name;
                     font.pixelSize: 16
                     color: DinastycoinComponents.Style.defaultFontColor
@@ -113,7 +116,8 @@ Rectangle {
                         onExited: parent.color = DinastycoinComponents.Style.defaultFontColor
                         onClicked: {
                             console.log("Copied to clipboard");
-                            clipboard.setText(parent.text);
+                            var balanceAllNumberOnly = parent.text.slice(0, -4);
+                            clipboard.setText(balanceAllNumberOnly);
                             appWindow.showStatusMessage(qsTr("Copied to clipboard"),3)
                         }
                     }
@@ -134,6 +138,7 @@ Rectangle {
 
                 DinastycoinComponents.TextPlain {
                     id: unlockedBalanceAll
+                    Layout.rightMargin: 87
                     font.family: DinastycoinComponents.Style.fontMonoRegular.name;
                     font.pixelSize: 16
                     color: DinastycoinComponents.Style.defaultFontColor
@@ -146,7 +151,8 @@ Rectangle {
                         onExited: parent.color = DinastycoinComponents.Style.defaultFontColor
                         onClicked: {
                             console.log("Copied to clipboard");
-                            clipboard.setText(parent.text);
+                            var unlockedBalanceAllNumberOnly = parent.text.slice(0, -4);
+                            clipboard.setText(unlockedBalanceAllNumberOnly);
                             appWindow.showStatusMessage(qsTr("Copied to clipboard"),3)
                         }
                     }
@@ -158,11 +164,48 @@ Rectangle {
             id: addressRow
             spacing: 0
 
-            DinastycoinComponents.LabelSubheader {
-                Layout.fillWidth: true
-                fontSize: 24
-                textFormat: Text.RichText
-                text: qsTr("Accounts") + translationManager.emptyString
+            RowLayout {
+                spacing: 0
+
+                DinastycoinComponents.LabelSubheader {
+                    Layout.fillWidth: true
+                    fontSize: 24
+                    textFormat: Text.RichText
+                    text: qsTr("Accounts") + translationManager.emptyString
+                }
+
+                DinastycoinComponents.StandardButton {
+                    id: createNewAccountButton
+                    visible: !selectAndSend
+                    small: true
+                    text: qsTr("Create new account") + translationManager.emptyString
+                    fontSize: 13
+                    onClicked: {
+                        inputDialog.labelText = qsTr("Set the label of the new account:") + translationManager.emptyString
+                        inputDialog.onAcceptedCallback = function() {
+                            appWindow.currentWallet.subaddressAccount.addRow(inputDialog.inputText)
+                            appWindow.currentWallet.switchSubaddressAccount(appWindow.currentWallet.numSubaddressAccounts() - 1)
+                            appWindow.onWalletUpdate();
+                        }
+                        inputDialog.onRejectedCallback = null;
+                        inputDialog.open()
+                    }
+
+                    Rectangle {
+                        anchors.top: createNewAccountButton.bottom
+                        anchors.topMargin: 8
+                        anchors.left: createNewAccountButton.left
+                        anchors.right: createNewAccountButton.right
+                        height: 2
+                        color: DinastycoinComponents.Style.appWindowBorderColor
+
+                        DinastycoinEffects.ColorTransition {
+                            targetObj: parent
+                            blackColor: DinastycoinComponents.Style._b_appWindowBorderColor
+                            whiteColor: DinastycoinComponents.Style._w_appWindowBorderColor
+                        }
+                    }
+                }
             }
 
             ColumnLayout {
@@ -186,9 +229,18 @@ Rectangle {
                     delegate: Rectangle {
                         id: tableItem2
                         height: subaddressAccountListRow.subaddressAccountListItemHeight
-                        width: parent.width
+                        width: parent ? parent.width : undefined
                         Layout.fillWidth: true
-                        color: "transparent"
+                        color: itemMouseArea.containsMouse || index === currentAccountIndex ? DinastycoinComponents.Style.titleBarButtonHoverColor : "transparent"
+
+                        Rectangle {
+                            visible: index === currentAccountIndex
+                            Layout.fillHeight: true
+                            anchors.top: parent.top
+                            anchors.bottom: parent.bottom
+                            color: "darkgrey"
+                            width: 2
+                        }
 
                         Rectangle {
                             color: DinastycoinComponents.Style.appWindowBorderColor
@@ -224,7 +276,7 @@ Rectangle {
 
                             DinastycoinComponents.Label {
                                 id: nameLabel
-                                color: DinastycoinComponents.Style.dimmedFontColor
+                                color: index === currentAccountIndex ? DinastycoinComponents.Style.defaultFontColor : DinastycoinComponents.Style.dimmedFontColor
                                 anchors.verticalCenter: parent.verticalCenter
                                 anchors.left: idLabel.right
                                 anchors.leftMargin: 6
@@ -239,23 +291,11 @@ Rectangle {
                                 id: addressLabel
                                 color: DinastycoinComponents.Style.defaultFontColor
                                 anchors.verticalCenter: parent.verticalCenter
-                                anchors.left: mainLayout.width >= 590 ? balanceTextLabel.left : balanceNumberLabel.left
+                                anchors.left: balanceNumberLabel.left
                                 anchors.leftMargin: -addressLabel.width - 30
                                 fontSize: 16
                                 fontFamily: DinastycoinComponents.Style.fontMonoRegular.name;
                                 text: TxUtils.addressTruncatePretty(address, mainLayout.width < 740 ? 1 : (mainLayout.width < 900 ? 2 : 3))
-                                themeTransition: false
-                            }
-
-                            DinastycoinComponents.Label {
-                                id: balanceTextLabel
-                                visible: mainLayout.width >= 590
-                                color: DinastycoinComponents.Style.defaultFontColor
-                                anchors.verticalCenter: parent.verticalCenter
-                                anchors.left: balanceNumberLabel.left
-                                anchors.leftMargin: -balanceTextLabel.width - 5
-                                fontSize: 16
-                                text: qsTr("Balance: ") + translationManager.emptyString
                                 themeTransition: false
                             }
 
@@ -267,18 +307,17 @@ Rectangle {
                                 anchors.leftMargin: -balanceNumberLabel.width
                                 fontSize: 16
                                 fontFamily: DinastycoinComponents.Style.fontMonoRegular.name;
-                                text: balance
+                                text: balance + " DCY"
                                 elide: Text.ElideRight
-                                textWidth: mainLayout.width < 660 ? 70 : 135
+                                textWidth: 180
                                 themeTransition: false
                             }
 
                             MouseArea {
+                                id: itemMouseArea
                                 cursorShape: Qt.PointingHandCursor
                                 anchors.fill: parent
                                 hoverEnabled: true
-                                onEntered: tableItem2.color = DinastycoinComponents.Style.titleBarButtonHoverColor
-                                onExited: tableItem2.color = "transparent"
                                 onClicked: {
                                     appWindow.currentWallet.switchSubaddressAccount(index);
                                     if (selectAndSend)
@@ -297,10 +336,14 @@ Rectangle {
                             DinastycoinComponents.IconButton {
                                 id: renameButton
                                 image: "qrc:///images/edit.svg"
+                                fontAwesomeFallbackIcon: FontAwesome.edit
+                                fontAwesomeFallbackSize: 22
                                 color: DinastycoinComponents.Style.defaultFontColor
-                                opacity: 0.5
+                                opacity: isOpenGL ? 0.5 : 1
+                                fontAwesomeFallbackOpacity: 0.5
                                 Layout.preferredWidth: 23
                                 Layout.preferredHeight: 21
+                                tooltip: qsTr("Edit account label") + translationManager.emptyString
 
                                 onClicked: pageAccount.renameSubaddressAccountLabel(index);
                             }
@@ -308,10 +351,14 @@ Rectangle {
                             DinastycoinComponents.IconButton {
                                 id: copyButton
                                 image: "qrc:///images/copy.svg"
+                                fontAwesomeFallbackIcon: FontAwesome.clipboard
+                                fontAwesomeFallbackSize: 22
                                 color: DinastycoinComponents.Style.defaultFontColor
-                                opacity: 0.5
+                                opacity: isOpenGL ? 0.5 : 1
+                                fontAwesomeFallbackOpacity: 0.5
                                 Layout.preferredWidth: 16
                                 Layout.preferredHeight: 21
+                                tooltip: qsTr("Copy address to clipboard") + translationManager.emptyString
 
                                 onClicked: {
                                     console.log("Address copied to clipboard");
@@ -339,32 +386,6 @@ Rectangle {
                     whiteColor: DinastycoinComponents.Style._w_appWindowBorderColor
                 }
             }
-
-            DinastycoinComponents.CheckBox { 
-                id: addNewAccountCheckbox 
-                visible: !selectAndSend
-                border: false
-                uncheckedIcon: FontAwesome.plusCircle
-                toggleOnClick: false
-                fontAwesomeIcons: true
-                fontSize: 16
-                iconOnTheLeft: true
-                Layout.fillWidth: true
-                width: 600
-                Layout.topMargin: 10
-                text: qsTr("Create new account") + translationManager.emptyString; 
-                onClicked: { 
-                    inputDialog.labelText = qsTr("Set the label of the new account:") + translationManager.emptyString
-                    inputDialog.inputText = qsTr("(Untitled)") + translationManager.emptyString
-                    inputDialog.onAcceptedCallback = function() {
-                        appWindow.currentWallet.subaddressAccount.addRow(inputDialog.inputText)
-                        appWindow.currentWallet.switchSubaddressAccount(appWindow.currentWallet.numSubaddressAccounts() - 1)
-                        appWindow.onWalletUpdate();
-                    }
-                    inputDialog.onRejectedCallback = null;
-                    inputDialog.open()
-                }
-            }
         }
     }
 
@@ -375,8 +396,8 @@ Rectangle {
             subaddressAccountListView.model = appWindow.currentWallet.subaddressAccountModel;
             appWindow.currentWallet.subaddress.refresh(appWindow.currentWallet.currentSubaddressAccount)
 
-            balanceAll.text = walletManager.displayAmount(appWindow.currentWallet.balanceAll())
-            unlockedBalanceAll.text = walletManager.displayAmount(appWindow.currentWallet.unlockedBalanceAll()) 
+            balanceAll.text = walletManager.displayAmount(appWindow.currentWallet.balanceAll()) + " DCY"
+            unlockedBalanceAll.text = walletManager.displayAmount(appWindow.currentWallet.unlockedBalanceAll()) + " DCY"
         }
     }
 

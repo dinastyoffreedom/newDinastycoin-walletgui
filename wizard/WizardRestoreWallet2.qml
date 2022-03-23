@@ -41,6 +41,9 @@ Rectangle {
     property alias pageHeight: pageRoot.height
     property string viewName: "wizardRestoreWallet2"
     property int recoveryMode: 1
+    property alias pwField: passwordFields.password
+    property alias pwConfirmField: passwordFields.passwordConfirm
+
 
     ColumnLayout {
         id: pageRoot
@@ -63,8 +66,8 @@ Rectangle {
             }
 
             WizardNav {
-                progressSteps: 4
-                progress: 2
+                progressSteps: appWindow.walletMode <= 1 ? 3 : 4
+                progress: 1
                 btnNext.enabled: passwordFields.calcStrengthAndVerify();
                 onPrevClicked: {
                     wizardStateView.state = "wizardRestoreWallet1";

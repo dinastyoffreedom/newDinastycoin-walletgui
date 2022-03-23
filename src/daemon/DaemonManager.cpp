@@ -27,7 +27,10 @@
 // THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "DaemonManager.h"
+#include "common/util.h"
+#include <QElapsedTimer>
 #include <QFile>
+#include <QMutexLocker>
 #include <QThread>
 #include <QFileInfo>
 #include <QDir>
@@ -36,33 +39,23 @@
 #include <QtConcurrent/QtConcurrent>
 #include <QApplication>
 #include <QProcess>
-#include <QTime>
 #include <QStorageInfo>
 #include <QVariantMap>
 #include <QVariant>
 #include <QMap>
-#include <QStringList>
+
 namespace {
     static const int DAEMON_START_TIMEOUT_SECONDS = 120;
 }
 
-DaemonManager * DaemonManager::m_instance = nullptr;
-QStringList DaemonManager::m_clArgs;
-
-DaemonManager *DaemonManager::instance(const QStringList *args)
+bool DaemonManager::start(const QString &flags, NetworkType::Type nettype, const QString &dataDir, const QString &bootstrapNodeAddress, bool noSync /* = false*/, bool pruneBlockchain /* = false*/)
 {
-    if (!m_instance) {
-        m_instance = new DaemonManager;
-        // store command line arguments for later use
-        m_clArgs = *args;
-        m_clArgs.removeFirst();
+    if (!QFileInfo(m_dinastycoind).isFile())
+    {
+        emit daemonStartFailure("\"" + QDir::toNativeSeparators(m_dinastycoind) + "\" " + tr("executable is missing"));
+        return false;
     }
 
-    return m_instance;
-}
-
-bool DaemonManager::start(const QString &flags, NetworkType::Type nettype, const QString &dataDir, const QString &bootstrapNodeAddress, bool noSync /* = false*/)
-{
     // prepare command line arguments and pass to dinastycoind
     QStringList arguments;
 
@@ -75,12 +68,6 @@ bool DaemonManager::start(const QString &flags, NetworkType::Type nettype, const
         arguments << "--testnet";
     else if (nettype == NetworkType::STAGENET)
         arguments << "--stagenet";
-
-    foreach (const QString &str, m_clArgs) {
-          qDebug() << QString(" [%1] ").arg(str);
-          if (!str.isEmpty())
-            arguments << str;
-    }
 
     // Custom startup flags for daemon
     foreach (const QString &str, flags.split(" ")) {
@@ -99,43 +86,46 @@ bool DaemonManager::start(const QString &flags, NetworkType::Type nettype, const
         arguments << "--bootstrap-daemon-address" << bootstrapNodeAddress;
     }
 
+    if (pruneBlockchain) {
+        if (!checkLmdbExists(dataDir)) { // check that DB has not already been created
+            arguments << "--prune-blockchain";
+        }
+    }
+
     if (noSync) {
         arguments << "--no-sync";
     }
 
     arguments << "--check-updates" << "disabled";
+    arguments << "--non-interactive";
 
-    // --max-concurrency based on threads available. max: 6
-    int32_t concurrency = qBound(1, QThread::idealThreadCount() / 2, 6);
+    // --max-concurrency based on threads available.
+    int32_t concurrency = qMax(1, QThread::idealThreadCount() / 2);
 
     if(!flags.contains("--max-concurrency", Qt::CaseSensitive)){
         arguments << "--max-concurrency" << QString::number(concurrency);
     }
-    //this newly added code for debug
-    if(!flags.contains("--allow-local-ip", Qt::CaseSensitive)){
-        arguments << "--allow-local-ip" ;
-    }
-   
-    //end
+
     qDebug() << "starting dinastycoind " + m_dinastycoind;
     qDebug() << "With command line arguments " << arguments;
 
-    m_daemon = new QProcess();
-    initialized = true;
+    QMutexLocker locker(&m_daemonMutex);
+
+    m_daemon.reset(new QProcess());
 
     // Connect output slots
-    connect (m_daemon, SIGNAL(readyReadStandardOutput()), this, SLOT(printOutput()));
-    connect (m_daemon, SIGNAL(readyReadStandardError()), this, SLOT(printError()));
+    connect(m_daemon.get(), SIGNAL(readyReadStandardOutput()), this, SLOT(printOutput()));
+    connect(m_daemon.get(), SIGNAL(readyReadStandardError()), this, SLOT(printError()));
 
     // Start dinastycoind
     bool started = m_daemon->startDetached(m_dinastycoind, arguments);
 
     // add state changed listener
-    connect(m_daemon,SIGNAL(stateChanged(QProcess::ProcessState)),this,SLOT(stateChanged(QProcess::ProcessState)));
+    connect(m_daemon.get(), SIGNAL(stateChanged(QProcess::ProcessState)), this, SLOT(stateChanged(QProcess::ProcessState)));
 
     if (!started) {
         qDebug() << "Daemon start error: " + m_daemon->errorString();
-        emit daemonStartFailure();
+        emit daemonStartFailure(m_daemon->errorString());
         return false;
     }
 
@@ -145,35 +135,33 @@ bool DaemonManager::start(const QString &flags, NetworkType::Type nettype, const
             emit daemonStarted();
             m_noSync = noSync;
         } else {
-            emit daemonStartFailure();
+            emit daemonStartFailure(tr("Timed out, local node is not responding after %1 seconds").arg(DAEMON_START_TIMEOUT_SECONDS));
         }
     });
 
     return true;
 }
 
-bool DaemonManager::stop(NetworkType::Type nettype)
+void DaemonManager::stopAsync(NetworkType::Type nettype, const QJSValue& callback)
 {
-    QString message;
-    sendCommand({"exit"}, nettype, message);
-    qDebug() << message;
+    const auto feature = m_scheduler.run([this, nettype] {
+        QString message;
+        sendCommand({"exit"}, nettype, message);
 
-    // Start stop watcher - Will kill if not shutting down
-    m_scheduler.run([this, nettype] {
-        if (stopWatcher(nettype))
-        {
-            emit daemonStopped();
-        }
-    });
+        return QJSValueList({stopWatcher(nettype)});
+    }, callback);
 
-    return true;
+    if (!feature.first)
+    {
+        QJSValue(callback).call(QJSValueList({false}));
+    }
 }
 
 bool DaemonManager::startWatcher(NetworkType::Type nettype) const
 {
     // Check if daemon is started every 2 seconds
     QElapsedTimer timer;
-    timer.restart();
+    timer.start();
     while(true && !m_app_exit && timer.elapsed() / 1000 < DAEMON_START_TIMEOUT_SECONDS  ) {
         QThread::sleep(2);
         if(!running(nettype)) {
@@ -191,7 +179,6 @@ bool DaemonManager::stopWatcher(NetworkType::Type nettype) const
 {
     // Check if daemon is running every 2 seconds. Kill if still running after 10 seconds
     int counter = 0;
-    QStringList argList;
     while(true && !m_app_exit) {
         QThread::sleep(2);
         counter++;
@@ -200,9 +187,9 @@ bool DaemonManager::stopWatcher(NetworkType::Type nettype) const
             if(counter >= 5) {
                 qDebug() << "Killing it! ";
 #ifdef Q_OS_WIN
-                QProcess::execute("taskkill /F /IM dinastycoind.exe", argList);
+                QProcess::execute("taskkill",  {"/F", "/IM", "dinastycoind.exe"});
 #else
-                QProcess::execute("pkill dinastycoind", argList);
+                QProcess::execute("pkill", {"dinastycoind"});
 #endif
             }
 
@@ -223,7 +210,10 @@ void DaemonManager::stateChanged(QProcess::ProcessState state)
 
 void DaemonManager::printOutput()
 {
-    QByteArray byteArray = m_daemon->readAllStandardOutput();
+    QByteArray byteArray = [this]() {
+        QMutexLocker locker(&m_daemonMutex);
+        return m_daemon->readAllStandardOutput();
+    }();
     QStringList strLines = QString(byteArray).split("\n");
 
     foreach (QString line, strLines) {
@@ -234,7 +224,10 @@ void DaemonManager::printOutput()
 
 void DaemonManager::printError()
 {
-    QByteArray byteArray = m_daemon->readAllStandardError();
+    QByteArray byteArray = [this]() {
+        QMutexLocker locker(&m_daemonMutex);
+        return m_daemon->readAllStandardError();
+    }();
     QStringList strLines = QString(byteArray).split("\n");
 
     foreach (QString line, strLines) {
@@ -337,6 +330,13 @@ QVariantMap DaemonManager::validateDataDir(const QString &dataDir) const
     return result;
 }
 
+bool DaemonManager::checkLmdbExists(QString datadir) {
+    if (datadir.isEmpty() || datadir.isNull()) {
+        datadir = QString::fromStdString(tools::get_default_data_dir());
+    }
+    return validateDataDir(datadir).value("lmdbExists").value<bool>();
+}
+
 DaemonManager::DaemonManager(QObject *parent)
     : QObject(parent)
     , m_scheduler(this)
@@ -351,7 +351,6 @@ DaemonManager::DaemonManager(QObject *parent)
 
     if (m_dinastycoind.length() == 0) {
         qCritical() << "no daemon binary defined for current platform";
-        m_has_daemon = false;
     }
 }
 

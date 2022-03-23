@@ -39,16 +39,18 @@ import "../../components" as DinastycoinComponents
 
 Rectangle {
     color: "transparent"
-    height: 1400
     Layout.fillWidth: true
+    property alias infoHeight: infoLayout.height
     property string walletModeString: {
+        var modeStr;
         if(appWindow.walletMode === 0){
-          return qsTr("Simple mode") + translationManager.emptyString;
+          modeStr = qsTr("Simple mode") + translationManager.emptyString;
         } else if(appWindow.walletMode === 1){
-          return qsTr("Simple mode") + " (bootstrap)" + translationManager.emptyString;
+          modeStr = qsTr("Simple mode") + " (bootstrap)" + translationManager.emptyString;
         } else if(appWindow.walletMode === 2){
-          return qsTr("Advanced mode") + translationManager.emptyString;
+          modeStr = "%1 (%2)".arg(qsTr("Advanced mode")).arg(persistentSettings.useRemoteNode ? qsTr("Remote node") : qsTr("Local node")) + translationManager.emptyString;
         }
+        return modeStr + (persistentSettings.portable ? ", %1".arg(qsTr("portable")) : "");
     }
 
     ColumnLayout {
@@ -103,7 +105,7 @@ Rectangle {
             DinastycoinComponents.TextBlock {
                 font.pixelSize: 14
                 color: DinastycoinComponents.Style.dimmedFontColor
-                text: Version.GUI_DINASTYCOIN_VERSION + translationManager.emptyString
+                text: dinastycoinVersion
             }
 
             Rectangle {
@@ -131,15 +133,23 @@ Rectangle {
             }
 
             DinastycoinComponents.TextBlock {
+                id: walletLocation
                 Layout.fillWidth: true
-                Layout.maximumWidth: 360
                 color: DinastycoinComponents.Style.dimmedFontColor
                 font.pixelSize: 14
-                text: {
-                    var wallet_path = walletPath();
-                    if(isIOS)
-                        wallet_path = dinastycoinAccountsDir + wallet_path;
-                    return wallet_path;
+                property string walletPath: (isIOS ?  appWindow.accountsDir : "") + persistentSettings.wallet_path
+                text: "\
+                    <style type='text/css'>\
+                        a {cursor:pointer;text-decoration: none; color: #FF6C3C}\
+                    </style>\
+                    <a href='#'>%1</a>".arg(walletPath)
+                textFormat: Text.RichText
+                onLinkActivated: oshelper.openContainingFolder(walletPath)
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.NoButton
+                    cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
                 }
             }
 
@@ -175,20 +185,13 @@ Rectangle {
                 color: DinastycoinComponents.Style.dimmedFontColor
                 font.pixelSize: 14
                 property var style: "<style type='text/css'>a {cursor:pointer;text-decoration: none; color: #FF6C3C}</style>"
-                text: (currentWallet ? currentWallet.walletCreationHeight : "") + style + qsTr(" <a href='#'> (Click to change)</a>") + translationManager.emptyString
+                text: (currentWallet ? currentWallet.walletCreationHeight : "") + style + " <a href='#'> (%1)</a>".arg(qsTr("Change")) + translationManager.emptyString
                 onLinkActivated: {
                     inputDialog.labelText = qsTr("Set a new restore height.\nYou can enter a block height or a date (YYYY-MM-DD):") + translationManager.emptyString;
-                    inputDialog.inputText = currentWallet ? currentWallet.walletCreationHeight : "0";
                     inputDialog.onAcceptedCallback = function() {
                         var _restoreHeight;
                         if (inputDialog.inputText) {
-                            var restoreHeightText = inputDialog.inputText;
-                            // Parse date string or restore height as integer
-                            if(restoreHeightText.indexOf('-') === 4 && restoreHeightText.length === 10) {
-                                _restoreHeight = Wizard.getApproximateBlockchainHeight(restoreHeightText, Utils.netTypeToString());
-                            } else {
-                                _restoreHeight = parseInt(restoreHeightText)
-                            }
+                            _restoreHeight = Utils.parseDateStringOrRestoreHeightAsInteger(inputDialog.inputText);
                         }
                         if (!isNaN(_restoreHeight)) {
                             if(_restoreHeight >= 0) {
@@ -206,7 +209,6 @@ Rectangle {
                                                                 + "The old wallet cache file will be renamed and can be restored later.\n"
                                                                 );
                                 confirmationDialog.icon = StandardIcon.Question
-                                confirmationDialog.cancelText = qsTr("Cancel")
                                 confirmationDialog.onAcceptedCallback = function() {
                                     appWindow.closeWallet(function() {
                                         walletManager.clearWalletCache(persistentSettings.wallet_path);
@@ -224,7 +226,7 @@ Rectangle {
                         appWindow.showStatusMessage(qsTr("Invalid restore height specified. Must be a number or a date formatted YYYY-MM-DD"),3);
                     }
                     inputDialog.onRejectedCallback = null;
-                    inputDialog.open()
+                    inputDialog.open(currentWallet ? currentWallet.walletCreationHeight.toFixed(0) : "0")
                 }
 
                 MouseArea {
@@ -262,7 +264,19 @@ Rectangle {
                 Layout.fillWidth: true
                 color: DinastycoinComponents.Style.dimmedFontColor
                 font.pixelSize: 14
-                text: walletLogPath
+                text: "\
+                    <style type='text/css'>\
+                        a {cursor:pointer;text-decoration: none; color: #FF6C3C}\
+                    </style>\
+                    <a href='#'>%1</a>".arg(logger.logFilePath)
+                textFormat: Text.RichText
+                onLinkActivated: oshelper.openContainingFolder(logger.logFilePath)
+
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.NoButton
+                    cursorShape: parent.hoveredLink ? Qt.PointingHandCursor : Qt.ArrowCursor
+                }
             }
 
             Rectangle {
@@ -363,32 +377,40 @@ Rectangle {
             }
         }
 
-        // Copy info to clipboard
-        DinastycoinComponents.StandardButton {
-            small: true
-            text: qsTr("Copy to clipboard") + translationManager.emptyString
-            onClicked: {
-                var data = "";
-                data += "GUI version: " + Version.GUI_VERSION + " (Qt " + qtRuntimeVersion + ")";
-                data += "\nEmbedded Dinastycoin version: " + Version.GUI_DINASTYCOIN_VERSION;
-                data += "\nWallet path: ";
+        RowLayout {
+            spacing: 20;
 
-                var wallet_path = walletPath();
-                if(isIOS)
-                    wallet_path = dinastycoinAccountsDir + wallet_path;
-                data += wallet_path;
+            DinastycoinComponents.StandardButton {
+                small: true
+                text: qsTr("Copy to clipboard") + translationManager.emptyString
+                onClicked: {
+                    var data = "";
+                    data += "GUI version: " + Version.GUI_VERSION + " (Qt " + qtRuntimeVersion + ")";
+                    data += "\nEmbedded Dinastycoin version: " + dinastycoinVersion;
+                    data += "\nWallet path: " + walletLocation.walletPath;
 
-                data += "\nWallet creation height: ";
-                if(currentWallet)
-                    data += currentWallet.walletCreationHeight;
+                    data += "\nWallet restore height: ";
+                    if(currentWallet)
+                        data += currentWallet.walletCreationHeight;
 
-                data += "\nWallet log path: " + walletLogPath;
-                data += "\nWallet mode: " + walletModeString;
-                data += "\nGraphics: " + isOpenGL ? "OpenGL" : "Low graphics mode";
+                    data += "\nWallet log path: " + logger.logFilePath;
+                    data += "\nWallet mode: " + walletModeString;
+                    data += "\nGraphics mode: " + (isOpenGL ? "OpenGL" : "Low graphics mode");
+                    if (isTails)
+                        data += "\nTails: " + (tailsUsePersistence ? "persistent" : "persistence disabled");
 
-                console.log("Copied to clipboard");
-                clipboard.setText(data);
-                appWindow.showStatusMessage(qsTr("Copied to clipboard"), 3);
+                    console.log("Copied to clipboard");
+                    clipboard.setText(data);
+                    appWindow.showStatusMessage(qsTr("Copied to clipboard"), 3);
+                }
+            }
+
+            DinastycoinComponents.StandardButton {
+                small: true
+                text: qsTr("Donate to Dinastycoin") + translationManager.emptyString
+                onClicked: {
+                    middlePanel.sendTo("888tNkZrPN6JsEgekjMnABU4TBzc2Dt29EPAvkRxbANsAnjyPbb3iQ1YBRk1UXcdRsiKc9dhwMVgN5S9cQUiyoogDavup3H", "", qsTr("Donation to Dinastycoin Core Team") + translationManager.emptyString);
+                }
             }
         }
     }

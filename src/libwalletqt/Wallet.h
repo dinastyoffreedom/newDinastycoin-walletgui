@@ -29,8 +29,10 @@
 #ifndef WALLET_H
 #define WALLET_H
 
+#include <atomic>
+
+#include <QElapsedTimer>
 #include <QObject>
-#include <QTime>
 #include <QMutex>
 #include <QList>
 #include <QJSValue>
@@ -41,6 +43,8 @@
 #include "PendingTransaction.h" // we need to have an access to the PendingTransaction::Priority enum here;
 #include "UnsignedTransaction.h"
 #include "NetworkType.h"
+#include "PassphraseHelper.h"
+#include "WalletListenerImpl.h"
 
 namespace Dinastycoin {
 struct Wallet; // forward declaration
@@ -57,9 +61,11 @@ class SubaddressModel;
 class SubaddressAccount;
 class SubaddressAccountModel;
 
-class Wallet : public QObject
+class Wallet : public QObject, public PassprasePrompter
 {
     Q_OBJECT
+    Q_PROPERTY(bool disconnected READ disconnected NOTIFY disconnectedChanged)
+    Q_PROPERTY(bool refreshing READ refreshing NOTIFY refreshingChanged)
     Q_PROPERTY(QString seed READ getSeed)
     Q_PROPERTY(QString seedLanguage READ getSeedLanguage)
     Q_PROPERTY(Status status READ status)
@@ -69,11 +75,10 @@ class Wallet : public QObject
     Q_PROPERTY(bool synchronized READ synchronized)
     Q_PROPERTY(QString errorString READ errorString)
     Q_PROPERTY(TransactionHistory * history READ history)
-    Q_PROPERTY(QString paymentId READ paymentId WRITE setPaymentId)
     Q_PROPERTY(TransactionHistorySortFilterModel * historyModel READ historyModel NOTIFY historyModelChanged)
     Q_PROPERTY(QString path READ path)
     Q_PROPERTY(AddressBookModel * addressBookModel READ addressBookModel)
-    Q_PROPERTY(AddressBook * addressBook READ addressBook)
+    Q_PROPERTY(AddressBook * addressBook READ addressBook NOTIFY addressBookChanged)
     Q_PROPERTY(SubaddressModel * subaddressModel READ subaddressModel)
     Q_PROPERTY(Subaddress * subaddress READ subaddress)
     Q_PROPERTY(SubaddressAccountModel * subaddressAccountModel READ subaddressAccountModel)
@@ -84,6 +89,7 @@ class Wallet : public QObject
     Q_PROPERTY(QString secretSpendKey READ getSecretSpendKey)
     Q_PROPERTY(QString publicSpendKey READ getPublicSpendKey)
     Q_PROPERTY(QString daemonLogPath READ getDaemonLogPath CONSTANT)
+    Q_PROPERTY(QString proxyAddress READ getProxyAddress WRITE setProxyAddress NOTIFY proxyAddressChanged)
     Q_PROPERTY(quint64 walletCreationHeight READ getWalletCreationHeight WRITE setWalletCreationHeight NOTIFY walletCreationHeightChanged)
 
 public:
@@ -100,7 +106,8 @@ public:
     enum ConnectionStatus {
         ConnectionStatus_Connected       = Dinastycoin::Wallet::ConnectionStatus_Connected,
         ConnectionStatus_Disconnected    = Dinastycoin::Wallet::ConnectionStatus_Disconnected,
-        ConnectionStatus_WrongVersion    = Dinastycoin::Wallet::ConnectionStatus_WrongVersion
+        ConnectionStatus_WrongVersion    = Dinastycoin::Wallet::ConnectionStatus_WrongVersion,
+        ConnectionStatus_Connecting
     };
 
     Q_ENUM(ConnectionStatus)
@@ -142,10 +149,17 @@ public:
 
     //! saves wallet to the file by given path
     //! empty path stores in current location
-    Q_INVOKABLE bool store(const QString &path = "");
+    Q_INVOKABLE void storeAsync(const QJSValue &callback, const QString &path = "");
 
     //! initializes wallet asynchronously
-    Q_INVOKABLE void initAsync(const QString &daemonAddress, bool trustedDaemon = false, quint64 upperTransactionLimit = 0, bool isRecovering = false, bool isRecoveringFromDevice = false, quint64 restoreHeight = 0);
+    Q_INVOKABLE void initAsync(
+        const QString &daemonAddress,
+        bool trustedDaemon = false,
+        quint64 upperTransactionLimit = 0,
+        bool isRecovering = false,
+        bool isRecoveringFromDevice = false,
+        quint64 restoreHeight = 0,
+        const QString &proxyAddress = "");
 
     // Set daemon rpc user/pass
     Q_INVOKABLE void setDaemonLogin(const QString &daemonUsername = "", const QString &daemonPassword = "");
@@ -160,10 +174,12 @@ public:
     Q_INVOKABLE void setTrustedDaemon(bool arg);
 
     //! returns balance
+    Q_INVOKABLE quint64 balance() const;
     Q_INVOKABLE quint64 balance(quint32 accountIndex) const;
     Q_INVOKABLE quint64 balanceAll() const;
 
     //! returns unlocked balance
+    Q_INVOKABLE quint64 unlockedBalance() const;
     Q_INVOKABLE quint64 unlockedBalance(quint32 accountIndex) const;
     Q_INVOKABLE quint64 unlockedBalanceAll() const;
 
@@ -181,6 +197,7 @@ public:
     //! hw-device backed wallets
     Q_INVOKABLE bool isHwBacked() const;
     Q_INVOKABLE bool isLedger() const;
+    Q_INVOKABLE bool isTrezor() const;
 
     //! returns if view only wallet
     Q_INVOKABLE bool viewOnly() const;
@@ -188,34 +205,27 @@ public:
     Q_INVOKABLE void refreshHeightAsync();
 
     //! export/import key images
-    Q_INVOKABLE bool exportKeyImages(const QString& path);
+    Q_INVOKABLE bool exportKeyImages(const QString& path, bool all = false);
     Q_INVOKABLE bool importKeyImages(const QString& path);
 
+    //! export/import outputs
+    Q_INVOKABLE bool exportOutputs(const QString& path, bool all = false);
+    Q_INVOKABLE bool importOutputs(const QString& path);
+
     //! refreshes the wallet
-    Q_INVOKABLE bool refresh();
-
-    //! refreshes the wallet asynchronously
-    Q_INVOKABLE void refreshAsync();
-
-    //! setup auto-refresh interval in seconds
-    Q_INVOKABLE void setAutoRefreshInterval(int seconds);
-
-    //! return auto-refresh interval in seconds
-    Q_INVOKABLE int autoRefreshInterval() const;
+    Q_INVOKABLE bool refresh(bool historyAndSubaddresses = true);
 
     // pause/resume refresh
-    Q_INVOKABLE void startRefresh() const;
-    Q_INVOKABLE void pauseRefresh() const;
-
-    //! creates transaction
-    Q_INVOKABLE PendingTransaction * createTransaction(const QString &dst_addr, const QString &payment_id,
-                                                       quint64 amount, quint32 mixin_count,
-                                                       PendingTransaction::Priority priority);
+    Q_INVOKABLE void startRefresh();
+    Q_INVOKABLE void pauseRefresh();
 
     //! creates async transaction
-    Q_INVOKABLE void createTransactionAsync(const QString &dst_addr, const QString &payment_id,
-                                            quint64 amount, quint32 mixin_count,
-                                            PendingTransaction::Priority priority);
+    Q_INVOKABLE void createTransactionAsync(
+        const QVector<QString> &destinationAddresses,
+        const QString &payment_id,
+        const QVector<QString> &destinationAmounts,
+        quint32 mixin_count,
+        PendingTransaction::Priority priority);
 
     //! creates transaction with all outputs
     Q_INVOKABLE PendingTransaction * createTransactionAll(const QString &dst_addr, const QString &payment_id,
@@ -245,6 +255,12 @@ public:
 
     //! deletes unsigned transaction and frees memory
     Q_INVOKABLE void disposeTransaction(UnsignedTransaction * t);
+
+    Q_INVOKABLE void estimateTransactionFeeAsync(
+        const QVector<QString> &destinationAddresses,
+        const QVector<quint64> &amounts,
+        PendingTransaction::Priority priority,
+        const QJSValue &callback);
 
     //! returns transaction history
     TransactionHistory * history() const;
@@ -284,11 +300,8 @@ public:
 
     //! Parse URI
     Q_INVOKABLE bool parse_uri(const QString &uri, QString &address, QString &payment_id, uint64_t &amount, QString &tx_description, QString &recipient_name, QVector<QString> &unknown_parameters, QString &error);
-
-    //! saved payment id
-    QString paymentId() const;
-
-    void setPaymentId(const QString &paymentId);
+    //! Make URI
+    Q_INVOKABLE QString make_uri(const QString &address, const quint64 &amount = 0, const QString &tx_description = "", const QString &recipient_name = "") const;
 
     //! Namespace your cacheAttribute keys to avoid collisions
     Q_INVOKABLE bool setCacheAttribute(const QString &key, const QString &val);
@@ -305,6 +318,8 @@ public:
     Q_INVOKABLE QString getSpendProof(const QString &txid, const QString &message) const;
     Q_INVOKABLE void getSpendProofAsync(const QString &txid, const QString &message, const QJSValue &callback);
     Q_INVOKABLE QString checkSpendProof(const QString &txid, const QString &message, const QString &signature) const;
+    Q_INVOKABLE QString getReserveProof(bool all, quint32 account_index, quint64 amount, const QString &message) const;
+    Q_INVOKABLE QString checkReserveProof(const QString &address, const QString &message, const QString &signature) const;
     // Rescan spent outputs
     Q_INVOKABLE bool rescanSpent();
 
@@ -339,6 +354,10 @@ public:
     Q_INVOKABLE void segregationHeight(quint64 height);
     Q_INVOKABLE void keyReuseMitigation2(bool mitigation);
 
+    // Passphrase entry for hardware wallets
+    Q_INVOKABLE void onPassphraseEntered(const QString &passphrase, bool enter_on_device, bool entry_abort=false);
+    virtual void onWalletPassphraseNeeded(bool on_device) override;
+
     // TODO: setListenter() when it implemented in API
 signals:
     // emitted on every event happened with wallet
@@ -353,19 +372,28 @@ signals:
     void moneyReceived(const QString &txId, quint64 amount);
     void unconfirmedMoneyReceived(const QString &txId, quint64 amount);
     void newBlock(quint64 height, quint64 targetHeight);
+    void addressBookChanged() const;
     void historyModelChanged() const;
     void walletCreationHeightChanged();
     void deviceButtonRequest(quint64 buttonCode);
     void deviceButtonPressed();
+    void walletPassphraseNeeded(bool onDevice);
     void transactionCommitted(bool status, PendingTransaction *t, const QStringList& txid);
     void heightRefreshed(quint64 walletHeight, quint64 daemonHeight, quint64 targetHeight) const;
     void deviceShowAddressShowed();
 
     // emitted when transaction is created async
-    void transactionCreated(PendingTransaction * transaction, QString address, QString paymentId, quint32 mixinCount);
+    void transactionCreated(
+        PendingTransaction *transaction,
+        const QVector<QString> &addresses,
+        const QString &paymentId,
+        quint32 mixinCount);
 
     void connectionStatusChanged(int status) const;
     void currentSubaddressAccountChanged() const;
+    void disconnectedChanged() const;
+    void proxyAddressChanged() const;
+    void refreshingChanged() const;
 
 private:
     Wallet(QObject * parent = nullptr);
@@ -383,7 +411,29 @@ private:
     quint64 daemonBlockChainTargetHeight() const;
 
     //! initializes wallet
-    bool init(const QString &daemonAddress, bool trustedDaemon, quint64 upperTransactionLimit, bool isRecovering, bool isRecoveringFromDevice, quint64 restoreHeight);
+    bool init(
+        const QString &daemonAddress,
+        bool trustedDaemon,
+        quint64 upperTransactionLimit,
+        bool isRecovering,
+        bool isRecoveringFromDevice,
+        quint64 restoreHeight,
+        const QString& proxyAddress);
+
+    PendingTransaction *createTransaction(
+        const QVector<QString> &destinationAddresses,
+        const QString &payment_id,
+        const QVector<QString> &destinationAmounts,
+        quint32 mixin_count,
+        PendingTransaction::Priority priority);
+
+    bool disconnected() const;
+    bool refreshing() const;
+    void refreshingSet(bool value);
+    void setConnectionStatus(ConnectionStatus value);
+    QString getProxyAddress() const;
+    void setProxyAddress(QString address);
+    void startRefreshThread();
 
 private:
     friend class WalletManager;
@@ -395,29 +445,34 @@ private:
     // Used for UI history view
     mutable TransactionHistoryModel * m_historyModel;
     mutable TransactionHistorySortFilterModel * m_historySortFilterModel;
-    QString m_paymentId;
     AddressBook * m_addressBook;
     mutable AddressBookModel * m_addressBookModel;
-    mutable QElapsedTimer   m_daemonBlockChainHeightTime;
+    mutable QElapsedTimer m_daemonBlockChainHeightTime;
     mutable quint64 m_daemonBlockChainHeight;
     int     m_daemonBlockChainHeightTtl;
-    mutable QElapsedTimer   m_daemonBlockChainTargetHeightTime;
+    mutable QElapsedTimer m_daemonBlockChainTargetHeightTime;
     mutable quint64 m_daemonBlockChainTargetHeight;
     int     m_daemonBlockChainTargetHeightTtl;
     mutable ConnectionStatus m_connectionStatus;
     int     m_connectionStatusTtl;
-    mutable QElapsedTimer   m_connectionStatusTime;
-    mutable bool    m_initialized;
+    mutable QElapsedTimer m_connectionStatusTime;
+    bool m_disconnected;
+    std::atomic<bool> m_initialized;
     uint32_t m_currentSubaddressAccount;
     Subaddress * m_subaddress;
     mutable SubaddressModel * m_subaddressModel;
     SubaddressAccount * m_subaddressAccount;
     mutable SubaddressAccountModel * m_subaddressAccountModel;
+    QMutex m_asyncMutex;
     QMutex m_connectionStatusMutex;
     bool m_connectionStatusRunning;
     QString m_daemonUsername;
     QString m_daemonPassword;
-    Dinastycoin::WalletListener *m_walletListener;
+    QString m_proxyAddress;
+    mutable QMutex m_proxyMutex;
+    std::atomic<bool> m_refreshEnabled;
+    std::atomic<bool> m_refreshing;
+    WalletListenerImpl *m_walletListener;
     FutureScheduler m_scheduler;
 };
 

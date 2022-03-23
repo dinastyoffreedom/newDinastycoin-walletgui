@@ -12,6 +12,10 @@ Text {
     property bool themeTransition: true
     property string themeTransitionBlackColor: ""
     property string themeTransitionWhiteColor: ""
+    property alias tooltip: tooltip.text
+    property alias tooltipLeft: tooltip.tooltipLeft
+    property alias tooltipIconVisible: tooltip.tooltipIconVisible
+    property alias tooltipPopup: tooltip.tooltipPopup
     font.family: DinastycoinComponents.Style.fontMedium.name
     font.bold: false
     font.pixelSize: 14
@@ -24,5 +28,11 @@ Text {
         duration: 750
         blackColor: root.themeTransitionBlackColor !== "" ? root.themeTransitionBlackColor : DinastycoinComponents.Style._b_defaultFontColor
         whiteColor: root.themeTransitionWhiteColor !== "" ? root.themeTransitionWhiteColor : DinastycoinComponents.Style._w_defaultFontColor
+    }
+
+    DinastycoinComponents.Tooltip {
+        id: tooltip
+        anchors.top: parent.top
+        anchors.left: tooltipIconVisible ? parent.right : parent.left
     }
 }

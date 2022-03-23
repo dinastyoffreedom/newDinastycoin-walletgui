@@ -5,14 +5,21 @@ import FontAwesome 1.0
 import "../components" as DinastycoinComponents
 
 MouseArea {
+    signal cut()
+    signal copy()
     signal paste()
+    signal remove()
+    signal selectAll()
 
     id: root
     acceptedButtons: Qt.RightButton
     anchors.fill: parent
     onClicked: {
-        if (mouse.button === Qt.RightButton)
+        if (mouse.button === Qt.RightButton) {
+            root.parent.persistentSelection = true;
             contextMenu.open()
+            root.parent.cursorVisible = true;
+        }
     }
 
     Menu {
@@ -22,19 +29,50 @@ MouseArea {
             border.color: DinastycoinComponents.Style.buttonBackgroundColorDisabledHover
             border.width: 1
             radius: 2
-            color: DinastycoinComponents.Style.buttonBackgroundColorDisabled
+            color: DinastycoinComponents.Style.blackTheme ? DinastycoinComponents.Style.buttonBackgroundColorDisabled : "#E5E5E5"
         }
 
         padding: 1
-        width: 100
+        width: 110
         x: root.mouseX
         y: root.mouseY
 
+        onClosed: {
+            if (!root.parent.activeFocus) {
+                root.parent.cursorVisible = false;
+            }
+            root.parent.persistentSelection = false;
+            root.parent.forceActiveFocus()
+        }
+
+        DinastycoinComponents.ContextMenuItem {
+            enabled: root.parent.selectedText != "" && !root.parent.readOnly
+            onTriggered: root.cut()
+            text: qsTr("Cut") + translationManager.emptyString
+        }
+
+        DinastycoinComponents.ContextMenuItem {
+            enabled: root.parent.selectedText != ""
+            onTriggered: root.copy()
+            text: qsTr("Copy") + translationManager.emptyString
+        }
+
         DinastycoinComponents.ContextMenuItem {
             enabled: root.parent.canPaste === true
-            glyphIcon: FontAwesome.paste
             onTriggered: root.paste()
             text: qsTr("Paste") + translationManager.emptyString
+        }
+
+        DinastycoinComponents.ContextMenuItem {
+            enabled: root.parent.selectedText != "" && !root.parent.readOnly
+            onTriggered: root.remove()
+            text: qsTr("Delete") + translationManager.emptyString
+        }
+
+        DinastycoinComponents.ContextMenuItem {
+            enabled: root.parent.text != ""
+            onTriggered: root.selectAll()
+            text: qsTr("Select All") + translationManager.emptyString
         }
     }
 }

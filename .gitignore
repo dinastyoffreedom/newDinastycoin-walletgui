@@ -13,6 +13,7 @@ dinastycoin-wallet-gui_plugin_import.cpp
 dinastycoin-wallet-gui_qml_plugin_import.cpp
 *.qmlc
 *.jsc
+qml_qmlcache.qrc
 
 ### Vim ###
 # Swap
@@ -28,6 +29,7 @@ Session.vim
 # Temporary                                                                                                                                                                                             
 .netrwhist
 *~
+*.autosave
 # Auto-generated tag files
 tags
 # Persistent undo

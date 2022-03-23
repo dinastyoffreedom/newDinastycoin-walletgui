@@ -28,7 +28,7 @@
 
 import QtQuick 2.9
 import QtQuick.Layouts 1.1
-import QtQuick.Controls 2.0
+import QtQuick.Controls 2.2
 
 import "../../js/Utils.js" as Utils
 import "../../components" as DinastycoinComponents
@@ -37,8 +37,8 @@ import "../../components" as DinastycoinComponents
 Rectangle {
     property alias consoleArea: consoleArea
     color: "transparent"
-    height: 1400
     Layout.fillWidth: true
+    property alias logHeight: settingsLog.height
 
     ColumnLayout {
         id: settingsLog
@@ -132,6 +132,18 @@ Rectangle {
             font.pixelSize: 18
             font.family: DinastycoinComponents.Style.fontRegular.name
             text: qsTr("Daemon log") + translationManager.emptyString
+            themeTransition: false
+            onColorChanged: {
+                var flickableContentYBefore = flickable.contentY
+                var daemonLogText = consoleArea.text
+                consoleArea.clear();
+                if (DinastycoinComponents.Style.blackTheme) {
+                    consoleArea.append(daemonLogText.replace(/#000000/g, '#ffffff').replace(/#008000/g, '#00ff00'));
+                } else {
+                    consoleArea.append(daemonLogText.replace(/#ffffff/g, '#000000').replace(/#00ff00/g, '#008000'));
+                }
+                flickable.contentY = flickableContentYBefore
+            }
         }
 
         Item {
@@ -150,6 +162,7 @@ Rectangle {
             Flickable {
                 id: flickable
                 anchors.fill: parent
+                boundsBehavior: isMac ? Flickable.DragAndOvershootBounds : Flickable.StopAtBounds
 
                 TextArea.flickable: TextArea {
                     id : consoleArea
@@ -158,12 +171,12 @@ Rectangle {
                     textFormat: TextEdit.RichText
                     selectByMouse: true
                     selectByKeyboard: true
-                    font.family: DinastycoinComponents.Style.defaultFontColor
+                    font.family: DinastycoinComponents.Style.fontRegular.name
                     font.pixelSize: 14
                     wrapMode: TextEdit.Wrap
                     readOnly: true
                     function logCommand(msg){
-                        msg = log_color(msg, "lime");
+                        msg = log_color(msg, DinastycoinComponents.Style.blackTheme ? "lime" : "green");
                         consoleArea.append(msg);
                     }
                     function logMessage(msg){
@@ -172,7 +185,7 @@ Rectangle {
                         if(msg.toLowerCase().indexOf('error') >= 0){
                             color = DinastycoinComponents.Style.errorColor;
                         } else if (msg.toLowerCase().indexOf('warning') >= 0){
-                            color = DinastycoinComponents.Style.warningColor;
+                            color = "#fa6800"
                         }
 
                         // format multi-lines
@@ -203,16 +216,41 @@ Rectangle {
                     }
                 }
 
-                ScrollBar.vertical: ScrollBar {}
+                ScrollBar.vertical: ScrollBar {
+                    onActiveChanged: if (!active && !isMac) active = true
+                    policy: isMac ? ScrollBar.AsNeeded : ScrollBar.AlwaysOn
+                }
             }
         }
 
         DinastycoinComponents.LineEdit {
             id: sendCommandText
             Layout.fillWidth: true
+            inputPaddingTop: 0
+            inputPaddingBottom: 0
+            property var lastCommands: []
+            property int currentCommandIndex
+            enabled: !persistentSettings.useRemoteNode
             fontBold: false
-            placeholderText: qsTr("command + enter (e.g 'help' or 'status')") + translationManager.emptyString
+            fontSize: 16
+            placeholderText: qsTr("Type a command (e.g '%1' or '%2') and press Enter").arg("help").arg("status") + translationManager.emptyString
             placeholderFontSize: 16
+            Keys.onUpPressed: {
+                if (currentCommandIndex != 0) {
+                    sendCommandText.text = lastCommands[currentCommandIndex - 1]
+                    currentCommandIndex = currentCommandIndex - 1
+                }
+            }
+            Keys.onDownPressed: {
+                if (currentCommandIndex == lastCommands.length - 1) {
+                    currentCommandIndex = lastCommands.length;
+                    return text = "";
+                }
+                if (currentCommandIndex != lastCommands.length) {
+                    sendCommandText.text = lastCommands[currentCommandIndex + 1]
+                    currentCommandIndex = currentCommandIndex + 1
+                }
+            }
             onAccepted: {
                 if(text.length > 0) {
                     consoleArea.logCommand(">>> " + text)
@@ -222,15 +260,14 @@ Rectangle {
                         }
                     });
                 }
+                lastCommands.push(text);
+                currentCommandIndex = lastCommands.length;
                 text = ""
             }
         }
     }
 
     Component.onCompleted: {
-        logLevelDropdown.currentIndex = appWindow.persistentSettings.logLevel;
-        logLevelDropdown.update();
-
         if(typeof daemonManager != "undefined")
             daemonManager.daemonConsoleUpdated.connect(onDaemonConsoleUpdated)
     }

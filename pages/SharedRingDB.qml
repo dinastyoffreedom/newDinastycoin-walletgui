@@ -1,4 +1,4 @@
-// Parts are Copyright (c) 2019, The Dinastycoin team
+// Copyright (c) 2018, The Dinastycoin Project
 //
 // All rights reserved.
 //
@@ -81,8 +81,7 @@ Rectangle {
         id: mainLayout
         Layout.fillWidth: true
         anchors.margins: 20
-        anchors.topMargin: 40
-  
+        anchors.topMargin: 0
         anchors.left: parent.left
         anchors.top: parent.top
         anchors.right: parent.right
@@ -113,25 +112,19 @@ Rectangle {
         DinastycoinComponents.LabelSubheader {
             Layout.fillWidth: true
             textFormat: Text.RichText
-            text: "<style type='text/css'>a {text-decoration: none; color: #FF6C3C; font-size: 14px;}</style>" +
-                  qsTr("Outputs marked as spent") + " <a href='#'>" + qsTr("Help") + "</a>" + translationManager.emptyString
-            onLinkActivated: {
-                sharedRingDBDialog.title  = qsTr("Outputs marked as spent") + translationManager.emptyString;
-                sharedRingDBDialog.text = qsTr(
+            text: qsTr("Outputs marked as spent") + translationManager.emptyString
+            tooltip: qsTr(
                     "In order to obscure which inputs in a Dinastycoin transaction are being spent, a third party should not be able " +
                     "to tell which inputs in a ring are already known to be spent. Being able to do so would weaken the protection " +
                     "afforded by ring signatures. If all but one of the inputs are known to be already spent, then the input being " +
                     "actually spent becomes apparent, thereby nullifying the effect of ring signatures, one of the three main layers " +
                     "of privacy protection Dinastycoin uses.<br>" +
                     "To help transactions avoid those inputs, a list of known spent ones can be used to avoid using them in new " +
-                    "transactions. Such a list is maintained by The Dinastycoin team and is available on the dinastycoin.com website, " +
+                    "transactions. Such a list is maintained by the Dinastycoin project and is available on the dinastycoin.com website, " +
                     "and you can import this list here.<br>" +
                     "Alternatively, you can scan the blockchain (and the blockchain of key-reusing Dinastycoin clones) yourself " +
                     "using the dinastycoin-blockchain-mark-spent-outputs tool to create a list of known spent outputs.<br>"
                 ) + translationManager.emptyString
-                sharedRingDBDialog.icon = StandardIcon.Information
-                sharedRingDBDialog.open()
-            }
         }
 
         DinastycoinComponents.TextPlain {
@@ -250,11 +243,8 @@ Rectangle {
             Layout.fillWidth: true
             Layout.topMargin: 24
             textFormat: Text.RichText
-            text: "<style type='text/css'>a {text-decoration: none; color: #FF6C3C; font-size: 14px;}</style>" +
-                  qsTr("Rings") + " <a href='#'>" + qsTr("Help") + "</a>" + translationManager.emptyString
-            onLinkActivated: {
-                sharedRingDBDialog.title  = qsTr("Rings") + translationManager.emptyString;
-                sharedRingDBDialog.text = qsTr(
+            text: qsTr("Rings") + translationManager.emptyString
+            tooltip: qsTr(
                     "In order to avoid nullifying the protection afforded by Dinastycoin's ring signatures, an output should not " +
                     "be spent with different rings on different blockchains. While this is normally not a concern, it can become one " +
                     "when a key-reusing Dinastycoin clone allows you to spend existing outputs. In this case, you need to ensure this " +
@@ -267,9 +257,6 @@ Rectangle {
                     "If you do not use a key-reusing Dinastycoin clone without these safety features, then you do not need to do anything " +
                     "as it is all automated.<br>"
                 ) + translationManager.emptyString
-                sharedRingDBDialog.icon = StandardIcon.Information
-                sharedRingDBDialog.open()
-            }
         }
 
         DinastycoinComponents.TextPlain {
@@ -380,8 +367,6 @@ Rectangle {
                         appWindow.currentWallet.segregatePreForkOutputs(segregatePreForkOutputs.checked)
                     }
                 }
-                width: 600
-                Layout.fillWidth: true
             }
 
             DinastycoinComponents.CheckBox {
@@ -394,16 +379,12 @@ Rectangle {
                         appWindow.currentWallet.keyReuseMitigation2(keyReuseMitigation2.checked)
                     }
                 }
-                width: 600
-                Layout.fillWidth: true
             }
 
             DinastycoinComponents.CheckBox {
                 id: setRingRelative
                 checked: true
                 text: qsTr("Relative") + translationManager.emptyString
-                width: 600
-                Layout.fillWidth: true
             }
         }
 

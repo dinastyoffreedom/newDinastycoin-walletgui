@@ -35,18 +35,15 @@
 AddressBookModel::AddressBookModel(QObject *parent, AddressBook *addressBook)
     : QAbstractListModel(parent) , m_addressBook(addressBook)
 {
-    qDebug(__FUNCTION__);
     connect(m_addressBook,SIGNAL(refreshStarted()),this,SLOT(startReset()));
     connect(m_addressBook,SIGNAL(refreshFinished()),this,SLOT(endReset()));
 
 }
 
 void AddressBookModel::startReset(){
-    qDebug(__FUNCTION__);
     beginResetModel();
 }
 void AddressBookModel::endReset(){
-    qDebug(__FUNCTION__);
     endResetModel();
 }
 
@@ -57,30 +54,29 @@ int AddressBookModel::rowCount(const QModelIndex &) const
 
 QVariant AddressBookModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid())
-        return QVariant();
+    QVariant result;
 
-    if (index.row() < 0 || (unsigned)index.row() >= m_addressBook->count()) {
-        return QVariant();
-    }
-
-    Dinastycoin::AddressBookRow * ar = m_addressBook->getRow(index.row());
-
-    QVariant result = "";
-    switch (role) {
-    case AddressBookAddressRole:
-        result = QString::fromStdString(ar->getAddress());
-        break;
-    case AddressBookDescriptionRole:
-        result = QString::fromStdString(ar->getDescription());
-        break;
-    case AddressBookPaymentIdRole:
-        result = QString::fromStdString(ar->getPaymentId());
-        break;
-    case AddressBookRowIdRole:
-        // Qt doesnt support size_t overload type casting
-        result.setValue(ar->getRowId());
-        break;
+    bool found = m_addressBook->getRow(index.row(), [&result, &role](const Dinastycoin::AddressBookRow &row) {
+        switch (role) {
+        case AddressBookAddressRole:
+            result = QString::fromStdString(row.getAddress());
+            break;
+        case AddressBookDescriptionRole:
+            result = QString::fromStdString(row.getDescription());
+            break;
+        case AddressBookPaymentIdRole:
+            result = QString::fromStdString(row.getPaymentId());
+            break;
+        case AddressBookRowIdRole:
+            // Qt doesnt support size_t overload type casting
+            result.setValue(row.getRowId());
+            break;
+        default:
+            qCritical() << "Unimplemented role " << role;
+        }
+    });
+    if (!found) {
+        qCritical("%s: internal error: invalid index %d", __FUNCTION__, index.row());
     }
 
     return result;
@@ -89,11 +85,6 @@ QVariant AddressBookModel::data(const QModelIndex &index, int role) const
 bool AddressBookModel::deleteRow(int row)
 {
     return m_addressBook->deleteRow(row);
-}
-
-int AddressBookModel::lookupPaymentID(const QString &payment_id) const
-{
-    return m_addressBook->lookupPaymentID(payment_id);
 }
 
 QHash<int, QByteArray> AddressBookModel::roleNames() const

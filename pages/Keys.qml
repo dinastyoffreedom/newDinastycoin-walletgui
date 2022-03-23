@@ -117,7 +117,7 @@ Rectangle {
             DinastycoinComponents.LineEdit {
                 Layout.fillWidth: true
                 id: walletCreationHeight
-//                readOnly: true
+                readOnly: true
                 copyButton: true
                 labelText: qsTr("Block #") + translationManager.emptyString
                 fontSize: 16
@@ -131,7 +131,7 @@ Rectangle {
                 Layout.fillWidth: true
                 fontSize: 22
                 Layout.topMargin: 10
-                text: qsTr("Keys") + translationManager.emptyString
+                text: qsTr("Primary address & Keys") + translationManager.emptyString
             }
             Rectangle {
                 Layout.fillWidth: true
@@ -140,8 +140,18 @@ Rectangle {
                 opacity: DinastycoinComponents.Style.dividerOpacity
                 Layout.bottomMargin: 10
             }
+            DinastycoinComponents.LineEditMulti {
+                Layout.fillWidth: true
+                id: primaryAddress
+                readOnly: true
+                copyButton: true
+                wrapMode: Text.Wrap
+                labelText: qsTr("Primary address") + translationManager.emptyString
+                fontSize: 16
+            }           
             DinastycoinComponents.LineEdit {
                 Layout.fillWidth: true
+                Layout.topMargin: 25
                 id: secretViewKey
                 readOnly: true
                 copyButton: true
@@ -261,6 +271,7 @@ Rectangle {
     function onPageCompleted() {
         console.log("keys page loaded");
 
+        primaryAddress.text = currentWallet.address(0, 0)
         walletCreationHeight.text = currentWallet.walletCreationHeight
         secretViewKey.text = currentWallet.secretViewKey
         publicViewKey.text = currentWallet.publicViewKey
@@ -281,7 +292,7 @@ Rectangle {
                 secretSpendKey.text = qsTr("(View Only Wallet - No secret spend key available)") + translationManager.emptyString
             }
             // hardware device wallet
-            if(currentWallet.seed === "") {
+            if(appWindow.currentWallet.isHwBacked() === true) {
                 showFullQr.visible = false
                 viewOnlyQRCode.visible = true
                 showViewOnlyQr.visible = false

@@ -1,41 +1,73 @@
 import QtQuick 2.9
 import QtQuick.Layouts 1.1
+import FontAwesome 1.0
 
 import "../components" as DinastycoinComponents
 
 ColumnLayout {
-    property alias buttonText: button.text
-    property alias description: description.text
-    property alias title: title.text
+    id: settingsListItem
+    property alias iconText: iconLabel.text
+    property alias description: area.text
+    property alias title: header.text
+    property bool isLast: false
+    property bool enabled: true
     signal clicked()
 
-    id: settingsListItem
     Layout.fillWidth: true
     spacing: 0
 
     Rectangle {
-        // divider
-        Layout.preferredHeight: 1
+        id: root
         Layout.fillWidth: true
-        Layout.bottomMargin: 8
-        color: DinastycoinComponents.Style.dividerColor
-        opacity: DinastycoinComponents.Style.dividerOpacity
-    }
+        Layout.minimumHeight: 75
+        Layout.preferredHeight: rect.height + 15
+        color: "transparent"
 
-    RowLayout {
-        Layout.fillWidth: true
-        spacing: 0
+        Rectangle {
+            id: divider
+            anchors.topMargin: 0
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: DinastycoinComponents.Style.dividerColor
+            opacity: DinastycoinComponents.Style.dividerOpacity
+        }
 
-        ColumnLayout {
-            Layout.fillWidth: true
-            Layout.alignment: Qt.AlignVCenter
-            spacing: 0
+        Rectangle {
+            id: rect
+            width: parent.width
+            height: header.height + area.contentHeight
+            color: "transparent";
+            opacity: settingsListItem.enabled ? 1 : 0.25
+            anchors.left: parent.left
+            anchors.bottomMargin: 4
+            anchors.topMargin: 4
+            anchors.verticalCenter: parent.verticalCenter
+
+            Rectangle {
+                id: icon
+                color: "transparent"
+                height: 32
+                width: 32
+                anchors.left: parent.left
+                anchors.leftMargin: 16
+                anchors.verticalCenter: parent.verticalCenter
+
+                DinastycoinComponents.Label {
+                    id: iconLabel
+                    fontSize: 32
+                    fontFamily: FontAwesome.fontFamilySolid
+                    anchors.centerIn: parent
+                    fontColor: DinastycoinComponents.Style.defaultFontColor
+                    styleName: "Solid"
+                }
+            }
 
             DinastycoinComponents.TextPlain {
-                id: title
-                Layout.fillWidth: true
-                Layout.preferredHeight: 20
-                Layout.topMargin: 8
+                id: header
+                anchors.left: icon.right
+                anchors.leftMargin: 16
+                anchors.top: parent.top
                 color: DinastycoinComponents.Style.defaultFontColor
                 opacity: DinastycoinComponents.Style.blackTheme ? 1.0 : 0.8
                 font.bold: true
@@ -43,23 +75,44 @@ ColumnLayout {
                 font.pixelSize: 16
             }
 
-            DinastycoinComponents.TextPlainArea {
-                id: description
+            Text {
+                id: area
+                anchors.top: header.bottom
+                anchors.topMargin: 4
+                anchors.left: icon.right
+                anchors.leftMargin: 16
                 color: DinastycoinComponents.Style.dimmedFontColor
-                colorBlackTheme: DinastycoinComponents.Style._b_dimmedFontColor
-                colorWhiteTheme: DinastycoinComponents.Style._w_dimmedFontColor
-                Layout.fillWidth: true
+                font.family: DinastycoinComponents.Style.fontRegular.name
+                font.pixelSize: 15
                 horizontalAlignment: TextInput.AlignLeft
+                wrapMode: Text.WordWrap;
+                leftPadding: 0
+                topPadding: 0
+                width: parent.width - (icon.width + icon.anchors.leftMargin + anchors.leftMargin)
             }
         }
 
-        DinastycoinComponents.StandardButton {
-            id: button
-            small: true
+        Rectangle {
+            id: bottomDivider
+            anchors.bottom: parent.bottom
+            anchors.left: parent.left
+            anchors.right: parent.right
+            height: 1
+            color: DinastycoinComponents.Style.dividerColor
+            opacity: DinastycoinComponents.Style.dividerOpacity
+            visible: settingsListItem.isLast
+        }
+
+        MouseArea {
+            visible: settingsListItem.enabled
+            cursorShape: Qt.PointingHandCursor
+            anchors.fill: parent
+            hoverEnabled: true
+            onEntered: root.color = DinastycoinComponents.Style.titleBarButtonHoverColor
+            onExited: root.color = "transparent"
             onClicked: {
                 settingsListItem.clicked()
             }
-            width: 135
         }
     }
 }

@@ -29,20 +29,28 @@
 import QtQuick 2.9
 import QtQuick.Layouts 1.1
 
+import FontAwesome 1.0
+
 import "../components" as DinastycoinComponents
 
 Item {
     id: button
+    property bool fontAwesomeIcon: false
+    property bool primary: true
     property string rightIcon: ""
     property string rightIconInactive: ""
-    property string textColor: button.enabled? DinastycoinComponents.Style.buttonTextColor: DinastycoinComponents.Style.buttonTextColorDisabled
+    property color textColor: primary ? DinastycoinComponents.Style.buttonTextColor : DinastycoinComponents.Style.buttonSecondaryTextColor;
     property bool small: false
     property alias text: label.text
+    property alias fontBold: label.font.bold
     property int fontSize: {
-        if(small) return 14;
+        if(small) return 13.5;
         else return 16;
     }
     property alias label: label
+    property alias tooltip: tooltip.text
+    property alias tooltipLeft: tooltip.tooltipLeft
+    property alias tooltipPopup: tooltip.tooltipPopup
     signal clicked()
 
     height: small ?  30 : 36
@@ -59,7 +67,8 @@ Item {
         id: buttonRect
         anchors.fill: parent
         radius: 3
-        border.width: parent.focus ? 1 : 0
+        border.width: parent.focus && parent.enabled ? 1 : 0
+        opacity: 1
 
         state: button.enabled ? "active" : "disabled"
         Component.onCompleted: state = state
@@ -67,10 +76,12 @@ Item {
         states: [
             State {
                 name: "hover"
-                when: buttonArea.containsMouse || button.focus
+                when: button.enabled && (buttonArea.containsMouse || button.focus)
                 PropertyChanges {
                     target: buttonRect
-                    color: DinastycoinComponents.Style.buttonBackgroundColorHover
+                    color: primary
+                        ? DinastycoinComponents.Style.buttonBackgroundColorHover
+                        : DinastycoinComponents.Style.buttonSecondaryBackgroundColorHover
                 }
             },
             State {
@@ -78,7 +89,9 @@ Item {
                 when: button.enabled
                 PropertyChanges {
                     target: buttonRect
-                    color: DinastycoinComponents.Style.buttonBackgroundColor
+                    color: primary
+                        ? DinastycoinComponents.Style.buttonBackgroundColor
+                        : DinastycoinComponents.Style.buttonSecondaryBackgroundColor
                 }
             },
             State {
@@ -86,7 +99,14 @@ Item {
                 when: !button.enabled
                 PropertyChanges {
                     target: buttonRect
-                    color: DinastycoinComponents.Style.buttonBackgroundColorDisabled
+                    opacity: 0.5
+                    color: primary
+                        ? DinastycoinComponents.Style.buttonBackgroundColor
+                        : DinastycoinComponents.Style.buttonSecondaryBackgroundColor
+                }
+                PropertyChanges {
+                    target: label
+                    opacity: 0.5
                 }
             }
         ]
@@ -106,7 +126,7 @@ Item {
         DinastycoinComponents.TextPlain {
             id: label
             font.family: DinastycoinComponents.Style.fontBold.name
-            font.bold: true
+            font.bold: button.primary ? true : false
             font.pixelSize: button.fontSize
             color: !buttonArea.pressed ? button.textColor : "transparent"
             visible: text !== ""
@@ -125,17 +145,34 @@ Item {
         }
 
         Image {
-            visible: button.rightIcon !== ""
+            visible: !fontAwesomeIcon && button.rightIcon !== ""
             Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
             width: button.small ? 16 : 20
             height: button.small ? 16 : 20
+            opacity: buttonRect.opacity
             source: {
+                if (fontAwesomeIcon) return "";
                 if(button.rightIconInactive !== "" && !button.enabled) {
                     return button.rightIconInactive;
                 }
                 return button.rightIcon;
             }
         }
+
+        Text {
+            Layout.alignment: Qt.AlignVCenter | Qt.AlignRight
+            color: DinastycoinComponents.Style.defaultFontColor
+            font.family: FontAwesome.fontFamilySolid
+            font.pixelSize: button.small ? 16 : 20
+            font.styleName: "Solid"
+            text: button.rightIcon
+            visible: fontAwesomeIcon && button.rightIcon !== ""
+        }
+    }
+
+    DinastycoinComponents.Tooltip {
+        id: tooltip
+        anchors.fill: parent
     }
 
     MouseArea {
@@ -143,9 +180,13 @@ Item {
         anchors.fill: parent
         hoverEnabled: true
         onClicked: doClick()
+        onEntered: tooltip.text ? tooltip.tooltipPopup.open() : ""
+        onExited: tooltip.text ? tooltip.tooltipPopup.close() : ""
         cursorShape: Qt.PointingHandCursor
     }
 
+    Keys.enabled: button.visible
     Keys.onSpacePressed: doClick()
+    Keys.onEnterPressed: Keys.onReturnPressed(event)
     Keys.onReturnPressed: doClick()
 }

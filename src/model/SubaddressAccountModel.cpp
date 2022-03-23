@@ -35,17 +35,14 @@
 SubaddressAccountModel::SubaddressAccountModel(QObject *parent, SubaddressAccount *subaddressAccount)
     : QAbstractListModel(parent), m_subaddressAccount(subaddressAccount)
 {
-    qDebug(__FUNCTION__);
     connect(m_subaddressAccount,SIGNAL(refreshStarted()),this,SLOT(startReset()));
     connect(m_subaddressAccount,SIGNAL(refreshFinished()),this,SLOT(endReset()));
 }
 
 void SubaddressAccountModel::startReset(){
-    qDebug("SubaddressAccountModel::startReset");
     beginResetModel();
 }
 void SubaddressAccountModel::endReset(){
-    qDebug("SubaddressAccountModel::endReset");
     endResetModel();
 }
 
@@ -56,25 +53,31 @@ int SubaddressAccountModel::rowCount(const QModelIndex &) const
 
 QVariant SubaddressAccountModel::data(const QModelIndex &index, int role) const
 {
-    if (!index.isValid() || index.row() < 0 || (unsigned)index.row() >= m_subaddressAccount->count())
+    if (!index.isValid() || index.row() < 0 || static_cast<quint64>(index.row()) >= m_subaddressAccount->count())
         return {};
 
-    Dinastycoin::SubaddressAccountRow * sr = m_subaddressAccount->getRow(index.row());
+    QVariant result;
 
-    QVariant result = "";
-    switch (role) {
-    case SubaddressAccountAddressRole:
-        result = QString::fromStdString(sr->getAddress());
-        break;
-    case SubaddressAccountLabelRole:
-        result = QString::fromStdString(sr->getLabel());
-        break;
-    case SubaddressAccountBalanceRole:
-        result = QString::fromStdString(sr->getBalance());
-        break;
-    case SubaddressAccountUnlockedBalanceRole:
-        result = QString::fromStdString(sr->getUnlockedBalance());
-        break;
+    bool found = m_subaddressAccount->getRow(index.row(), [&result, &role](const Dinastycoin::SubaddressAccountRow &row) {
+        switch (role) {
+        case SubaddressAccountAddressRole:
+            result = QString::fromStdString(row.getAddress());
+            break;
+        case SubaddressAccountLabelRole:
+            result = QString::fromStdString(row.getLabel());
+            break;
+        case SubaddressAccountBalanceRole:
+            result = QString::fromStdString(row.getBalance());
+            break;
+        case SubaddressAccountUnlockedBalanceRole:
+            result = QString::fromStdString(row.getUnlockedBalance());
+            break;
+        default:
+            qCritical() << "Unimplemented role" << role;
+        }
+    });
+    if (!found) {
+        qCritical("%s: internal error: invalid index %d", __FUNCTION__, index.row());
     }
 
     return result;

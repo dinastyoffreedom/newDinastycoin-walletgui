@@ -39,23 +39,34 @@ Rectangle {
     property var connected: Wallet.ConnectionStatus_Disconnected
 
     function getConnectionStatusString(status) {
-        if (status == Wallet.ConnectionStatus_Connected) {
-            if(!appWindow.daemonSynced)
-                return qsTr("Synchronizing")
-            if(persistentSettings.useRemoteNode)
-                return qsTr("Remote node")
-            return appWindow.isMining ? qsTr("Connected") + " + " + qsTr("Mining"): qsTr("Connected")
+        switch (appWindow.daemonStartStopInProgress)
+        {
+            case 1:
+                return qsTr("Starting the node");
+            case 2:
+                return qsTr("Stopping the node");
+            default:
+                break;
         }
-        if (status == Wallet.ConnectionStatus_WrongVersion)
-            return qsTr("Wrong version")
-        if (status == Wallet.ConnectionStatus_Disconnected){
-            if(appWindow.walletMode <= 1){
-                return qsTr("Searching node") + translationManager.emptyString;
-            }
-            return qsTr("Disconnected")
+        switch (status) {
+            case Wallet.ConnectionStatus_Connected:
+                if (!appWindow.daemonSynced)
+                    return qsTr("Synchronizing");
+                if (persistentSettings.useRemoteNode)
+                    return qsTr("Remote node");
+                return appWindow.isMining ? qsTr("Connected") + " + " + qsTr("Mining"): qsTr("Connected");
+            case Wallet.ConnectionStatus_WrongVersion:
+                return qsTr("Wrong version");
+            case Wallet.ConnectionStatus_Disconnected:
+                if (appWindow.walletMode <= 1) {
+                    return qsTr("Searching node") + translationManager.emptyString;
+                }
+                return qsTr("Disconnected");
+            case Wallet.ConnectionStatus_Connecting:
+                return qsTr("Connecting");
+            default:
+                return qsTr("Invalid connection status");
         }
-
-        return qsTr("Invalid connection status")
     }
 
     RowLayout {
@@ -69,7 +80,7 @@ Rectangle {
                 if(item.connected == Wallet.ConnectionStatus_Connected){
                     return 1
                 } else {
-                    return 0.5
+                    DinastycoinComponents.Style.blackTheme ? 0.5 : 0.3
                 }
             }
 
@@ -81,7 +92,7 @@ Rectangle {
                 source: {
                     if(appWindow.isMining) {
                        return "qrc:///images/miningdcy.png"
-                    } else if(item.connected == Wallet.ConnectionStatus_Connected) {
+                    } else if(item.connected == Wallet.ConnectionStatus_Connected || !DinastycoinComponents.Style.blackTheme) {
                         return "qrc:///images/lightning.png"
                     } else {
                         return "qrc:///images/lightning-white.png"
@@ -115,8 +126,8 @@ Rectangle {
                 font.family: DinastycoinComponents.Style.fontMedium.name
                 font.bold: true
                 font.pixelSize: 13
-                color: DinastycoinComponents.Style.dimmedFontColor
-                opacity: DinastycoinComponents.Style.blackTheme ? 0.65 : 0.5
+                color: DinastycoinComponents.Style.blackTheme ? DinastycoinComponents.Style.dimmedFontColor : DinastycoinComponents.Style.defaultFontColor
+                opacity: DinastycoinComponents.Style.blackTheme ? 0.65 : 0.75
                 text: qsTr("Network status") + translationManager.emptyString
                 themeTransition: false
             }
@@ -148,20 +159,22 @@ Rectangle {
                 }
             }
 
-            Text {
+            DinastycoinComponents.TextPlain {
                 anchors.left: statusTextVal.right
                 anchors.leftMargin: 16
                 anchors.verticalCenter: parent.verticalCenter
-                color: refreshMouseArea.containsMouse ?  DinastycoinComponents.Style.dimmedFontColor : DinastycoinComponents.Style.defaultFontColor
+                color: refreshMouseArea.containsMouse ?  DinastycoinComponents.Style.defaultFontColor : DinastycoinComponents.Style.dimmedFontColor
                 font.family: FontAwesome.fontFamilySolid
                 font.pixelSize: 24
                 font.styleName: "Solid"
-                opacity: iconItem.opacity * (refreshMouseArea.visible ? 1 : 0.5)
+                opacity: 0.85
                 text: FontAwesome.random
+                themeTransition: false
+                tooltip: qsTr("Switch to another public remote node") + translationManager.emptyString;
                 visible: (
-                    item.connected != Wallet.ConnectionStatus_Disconnected &&
+                    !appWindow.disconnected &&
                     !persistentSettings.useRemoteNode &&
-                    persistentSettings.bootstrapNodeAddress == "auto"
+                    (persistentSettings.bootstrapNodeAddress == "auto" || persistentSettings.walletMode < 2)
                 )
 
                 MouseArea {
@@ -170,6 +183,8 @@ Rectangle {
                     hoverEnabled: true
                     cursorShape: Qt.PointingHandCursor
                     visible: true
+                    onEntered: parent.tooltipPopup.open()
+                    onExited: parent.tooltipPopup.close()
                     onClicked: {
                         const callback = function(result) {
                             refreshMouseArea.visible = true;

@@ -37,8 +37,8 @@ import "../../components" as DinastycoinComponents
 
 Rectangle {
     color: "transparent"
-    height: 1400
     Layout.fillWidth: true
+    property alias layoutHeight: settingsUI.height
 
     ColumnLayout {
         id: settingsUI
@@ -56,8 +56,20 @@ Rectangle {
             checked: persistentSettings.customDecorations
             onClicked: Windows.setCustomWindowDecorations(checked)
             text: qsTr("Custom decorations") + translationManager.emptyString
-            width: 600
-            Layout.fillWidth: true
+        }
+
+        DinastycoinComponents.CheckBox {
+            id: checkForUpdatesCheckBox
+            enabled: !disableCheckUpdatesFlag
+            checked: persistentSettings.checkForUpdates && !disableCheckUpdatesFlag
+            onClicked: persistentSettings.checkForUpdates = !persistentSettings.checkForUpdates
+            text: qsTr("Check for updates periodically") + translationManager.emptyString
+        }
+
+        DinastycoinComponents.CheckBox {
+            checked: persistentSettings.displayWalletNameInTitleBar
+            onClicked: persistentSettings.displayWalletNameInTitleBar = !persistentSettings.displayWalletNameInTitleBar
+            text: qsTr("Display wallet name in title bar") + translationManager.emptyString
         }
 
         DinastycoinComponents.CheckBox {
@@ -68,8 +80,6 @@ Rectangle {
                 appWindow.updateBalance();
             }
             text: qsTr("Hide balance") + translationManager.emptyString
-            width: 600
-            Layout.fillWidth: true
         }
 
         DinastycoinComponents.CheckBox {
@@ -79,10 +89,47 @@ Rectangle {
             toggleOnClick: false
             onClicked: {
                 DinastycoinComponents.Style.blackTheme = !DinastycoinComponents.Style.blackTheme;
-                persistentSettings.blackTheme = DinastycoinComponents.Style.blackTheme;
             }
-            width: 600
+        }
+        
+        DinastycoinComponents.CheckBox {
+            checked: persistentSettings.askPasswordBeforeSending
+            text: qsTr("Ask for password before sending a transaction") + translationManager.emptyString
+            toggleOnClick: false
+            onClicked: {
+                if (persistentSettings.askPasswordBeforeSending) {
+                    passwordDialog.onAcceptedCallback = function() {
+                        if (appWindow.walletPassword === passwordDialog.password){
+                            persistentSettings.askPasswordBeforeSending = false;
+                        } else {
+                            passwordDialog.showError(qsTr("Wrong password"));
+                        }
+                    }
+                    passwordDialog.onRejectedCallback = null;
+                    passwordDialog.open()
+                } else {
+                    persistentSettings.askPasswordBeforeSending = true;
+                }
+            }
+        }
+
+        DinastycoinComponents.CheckBox {
+            checked: persistentSettings.autosave
+            onClicked: persistentSettings.autosave = !persistentSettings.autosave
+            text: qsTr("Autosave") + translationManager.emptyString
+        }
+
+        DinastycoinComponents.Slider {
             Layout.fillWidth: true
+            Layout.leftMargin: 35
+            Layout.topMargin: 6
+            visible: persistentSettings.autosave
+            from: 1
+            stepSize: 1
+            to: 60
+            value: persistentSettings.autosaveMinutes
+            text: "%1 %2 %3".arg(qsTr("Every")).arg(value).arg(qsTr("minute(s)")) + translationManager.emptyString
+            onMoved: persistentSettings.autosaveMinutes = value
         }
 
         DinastycoinComponents.CheckBox {
@@ -90,74 +137,22 @@ Rectangle {
             checked: persistentSettings.lockOnUserInActivity
             onClicked: persistentSettings.lockOnUserInActivity = !persistentSettings.lockOnUserInActivity
             text: qsTr("Lock wallet on inactivity") + translationManager.emptyString
-            width: 600
-            Layout.fillWidth: true
         }
 
-        ColumnLayout {
+        DinastycoinComponents.Slider {
             visible: userInActivityCheckbox.checked
             Layout.fillWidth: true
             Layout.topMargin: 6
-            Layout.leftMargin: 42
-            spacing: 0
-
-            Text {
-                color: DinastycoinComponents.Style.defaultFontColor
-                font.pixelSize: 14
-                Layout.fillWidth: true
-                text: {
-                    var val = userInactivitySlider.value;
-                    var minutes = val > 1 ? qsTr("minutes") : qsTr("minute");
-
-                    qsTr("After ") + val + " " + minutes + translationManager.emptyString;
-                }
+            Layout.leftMargin: 35
+            from: 1
+            stepSize: 1
+            to: 60
+            value: persistentSettings.lockOnUserInActivityInterval
+            text: {
+                var minutes = value > 1 ? qsTr("minutes") : qsTr("minute");
+                return qsTr("After ") + value + " " + minutes + translationManager.emptyString;
             }
-
-            Slider {
-                id: userInactivitySlider
-                from: 1
-                value: persistentSettings.lockOnUserInActivityInterval
-                to: 60
-                leftPadding: 0
-                stepSize: 1
-                snapMode: Slider.SnapAlways
-
-                background: Rectangle {
-                    x: parent.leftPadding
-                    y: parent.topPadding + parent.availableHeight / 2 - height / 2
-                    implicitWidth: 200
-                    implicitHeight: 4
-                    width: parent.availableWidth
-                    height: implicitHeight
-                    radius: 2
-                    color: DinastycoinComponents.Style.progressBarBackgroundColor
-
-                    Rectangle {
-                        width: parent.visualPosition * parent.width
-                        height: parent.height
-                        color: DinastycoinComponents.Style.green
-                        radius: 2
-                    }
-                }
-
-                handle: Rectangle {
-                    x: parent.leftPadding + parent.visualPosition * (parent.availableWidth - width)
-                    y: parent.topPadding + parent.availableHeight / 2 - height / 2
-                    implicitWidth: 18
-                    implicitHeight: 18
-                    radius: 8
-                    color: parent.pressed ? "#f0f0f0" : "#f6f6f6"
-                    border.color: DinastycoinComponents.Style.grey
-                }
-
-                onMoved: persistentSettings.lockOnUserInActivityInterval = userInactivitySlider.value;
-                MouseArea {
-                    anchors.fill: parent
-                    acceptedButtons: Qt.NoButton
-                    hoverEnabled: true
-                    cursorShape: Qt.PointingHandCursor
-                }
-            }
+            onMoved: persistentSettings.lockOnUserInActivityInterval = value
         }
 
         //! Manage pricing
@@ -173,8 +168,6 @@ Rectangle {
                         appWindow.fiatTimerStop();
                     }
                 }
-                width: 600
-                Layout.fillWidth: true
             }
         }
 
@@ -185,51 +178,34 @@ Rectangle {
             Layout.leftMargin: 36
             columnSpacing: 32
 
-            ColumnLayout {
-                spacing: 10
-                Layout.fillWidth: true
+            DinastycoinComponents.StandardDropdown {
+                id: fiatPriceProviderDropDown
+                Layout.maximumWidth: 200
+                labelText: qsTr("Price source") + translationManager.emptyString
+                labelFontSize: 14
+                dataModel: fiatPriceProvidersModel
+                onChanged: {
+                    var obj = dataModel.get(currentIndex);
+                    persistentSettings.fiatPriceProvider = obj.data;
 
-                DinastycoinComponents.Label {
-                    Layout.fillWidth: true
-                    fontSize: 14
-                    text: qsTr("Price source") + translationManager.emptyString
-                }
-
-                DinastycoinComponents.StandardDropdown {
-                    id: fiatPriceProviderDropDown
-                    Layout.fillWidth: true
-                    dataModel: fiatPriceProvidersModel
-                    onChanged: {
-                        var obj = dataModel.get(currentIndex);
-                        persistentSettings.fiatPriceProvider = obj.data;
-
-                        if(persistentSettings.fiatPriceEnabled)
-                            appWindow.fiatApiRefresh();
-                    }
+                    if(persistentSettings.fiatPriceEnabled)
+                        appWindow.fiatApiRefresh();
                 }
             }
 
-            ColumnLayout {
-                spacing: 10
-                Layout.fillWidth: true
+            DinastycoinComponents.StandardDropdown {
+                id: fiatPriceCurrencyDropdown
+                Layout.maximumWidth: 100
+                labelText: qsTr("Currency") + translationManager.emptyString
+                labelFontSize: 14
+                currentIndex: persistentSettings.fiatPriceCurrency === "dcyusd" ? 0 : 1
+                dataModel: fiatPriceCurrencyModel
+                onChanged: {
+                    var obj = dataModel.get(currentIndex);
+                    persistentSettings.fiatPriceCurrency = obj.data;
 
-                DinastycoinComponents.Label {
-                    Layout.fillWidth: true
-                    fontSize: 14
-                    text: qsTr("Currency") + translationManager.emptyString
-                }
-
-                DinastycoinComponents.StandardDropdown {
-                    id: fiatPriceCurrencyDropdown
-                    Layout.fillWidth: true
-                    dataModel: fiatPriceCurrencyModel
-                    onChanged: {
-                        var obj = dataModel.get(currentIndex);
-                        persistentSettings.fiatPriceCurrency = obj.data;
-
-                        if(persistentSettings.fiatPriceEnabled)
-                            appWindow.fiatApiRefresh();
-                    }
+                    if(persistentSettings.fiatPriceEnabled)
+                        appWindow.fiatApiRefresh();
                 }
             }
 
@@ -259,6 +235,37 @@ Rectangle {
                     appWindow.fiatApiRefresh();
                     appWindow.fiatTimerStart();
                 }
+            }
+        }
+
+        DinastycoinComponents.CheckBox {
+            id: proxyCheckbox
+            Layout.topMargin: 6
+            enabled: !socksProxyFlagSet
+            checked: socksProxyFlagSet ? socksProxyFlag : persistentSettings.proxyEnabled
+            onClicked: {
+                persistentSettings.proxyEnabled = !persistentSettings.proxyEnabled;
+            }
+            text: qsTr("Socks5 proxy (%1%2)")
+                .arg(appWindow.walletMode >= 2 ? qsTr("remote node connections, ") : "")
+                .arg(qsTr("updates downloading, fetching price sources")) + translationManager.emptyString
+        }
+
+        DinastycoinComponents.RemoteNodeEdit {
+            id: proxyEdit
+            enabled: proxyCheckbox.enabled
+            Layout.leftMargin: 36
+            Layout.topMargin: 6
+            Layout.minimumWidth: 100
+            placeholderFontSize: 15
+            visible: proxyCheckbox.checked
+
+            daemonAddrLabelText: qsTr("IP address") + translationManager.emptyString
+            daemonPortLabelText: qsTr("Port") + translationManager.emptyString
+
+            initialAddress: socksProxyFlagSet ? socksProxyFlag : persistentSettings.proxyAddress
+            onEditingFinished: {
+                persistentSettings.proxyAddress = proxyEdit.getAddress();
             }
         }
 
@@ -306,10 +313,6 @@ Rectangle {
                 fiatPriceProviderDropDown.currentIndex = i;
             i += 1;
         }
-
-        fiatPriceProviderDropDown.update();
-        fiatPriceCurrencyDropdown.currentIndex = persistentSettings.fiatPriceCurrency === "dcyusd" ? 0 : 1;
-        fiatPriceCurrencyDropdown.update();
 
         console.log('SettingsLayout loaded');
     }

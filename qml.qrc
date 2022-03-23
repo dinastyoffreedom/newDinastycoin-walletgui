@@ -3,17 +3,25 @@
         <file>main.qml</file>
         <file>LeftPanel.qml</file>
         <file>MiddlePanel.qml</file>
-        <file>images/download-white.png</file>
-        <file>images/download-white@2x.png</file>
-        <file>images/external-link-white.png</file>
-        <file>images/external-link-white@2x.png</file>
+        <file>components/Dialog.qml</file>
         <file>components/Label.qml</file>
+        <file>components/LanguageButton.qml</file>
+        <file>components/Navbar.qml</file>
+        <file>components/NavbarItem.qml</file>
+        <file>components/RemoteNodeDialog.qml</file>
+        <file>components/RemoteNodeList.qml</file>
         <file>components/SettingsListItem.qml</file>
+        <file>components/Slider.qml</file>
+        <file>components/Tooltip.qml</file>
+        <file>components/UpdateDialog.qml</file>
         <file>images/whatIsIcon.png</file>
         <file>images/whatIsIcon@2x.png</file>
-        <file>images/lockIcon.png</file>
         <file>components/MenuButton.qml</file>
+        <file>dinastycoin/utils/gpg_keys/binaryfate.asc</file>
+        <file>dinastycoin/utils/gpg_keys/fluffypony.asc</file>
+        <file>dinastycoin/utils/gpg_keys/luigi1111.asc</file>
         <file>pages/Account.qml</file>
+        <file>pages/Advanced.qml</file>
         <file>pages/Transfer.qml</file>
         <file>pages/History.qml</file>
         <file>pages/AddressBook.qml</file>
@@ -26,9 +34,8 @@
         <file>components/LineEdit.qml</file>
         <file>components/TipItem.qml</file>
         <file>images/tip.png</file>
-        <file>components/Scroll.qml</file>
         <file>components/MenuButtonDivider.qml</file>
-        <file>images/dinastycoinIcon.png</file>
+        <file>images/dinastycoin-vector.svg</file>
         <file>components/StandardDropdown.qml</file>
         <file>images/whiteDropIndicator.png</file>
         <file>images/whiteDropIndicator@2x.png</file>
@@ -39,7 +46,7 @@
         <file>images/prevMonth.png</file>
         <file>images/prevMonth@2x.png</file>
         <file>components/TitleBar.qml</file>
-        <file>images/dinastycoinLogo2.png</file>
+        <file>components/MenuBar.qml</file>
         <file>images/resize.png</file>
         <file>images/resize@2x.png</file>
         <file>images/resizeHovered.png</file>
@@ -89,7 +96,10 @@
         <file>lang/flags/ua.png</file>
         <file>lang/flags/gb.png</file>
         <file>lang/flags/us.png</file>
-        <file>lang/flags/pirate.png</file>
+        <file>lang/flags/nb_NO.png</file>
+        <file>lang/flags/el.png</file>
+        <file>lang/flags/vi.png</file>
+        <file>lang/flags/is.png</file>
         <file>pages/Receive.qml</file>
         <file>pages/TxKey.qml</file>
         <file>pages/SharedRingDB.qml</file>
@@ -100,12 +110,11 @@
         <file>components/ProcessingSplash.qml</file>
         <file>components/ProgressBar.qml</file>
         <file>components/StandardDialog.qml</file>
+        <file>components/DevicePassphraseDialog.qml</file>
         <file>pages/Sign.qml</file>
         <file>components/DaemonManagerDialog.qml</file>
         <file>version.js</file>
-        <file>components/DaemonConsole.qml</file>
         <file>components/QRCodeScanner.qml</file>
-        <file>components/Notifier.qml</file>
         <file>components/TextBlock.qml</file>
         <file>components/RemoteNodeEdit.qml</file>
         <file>pages/Keys.qml</file>
@@ -115,8 +124,6 @@
         <file>images/card-background-white.png</file>
         <file>images/card-background-white@2x.png</file>
         <file>images/dinastycoinLogo_white.png</file>
-        <file>images/question.png</file>
-        <file>images/question@2x.png</file>
         <file>images/titlebarLogo.png</file>
         <file>images/titlebarLogo@2x.png</file>
         <file>pages/merchant/MerchantTitlebar.qml</file>
@@ -155,8 +162,6 @@
         <file>js/TxUtils.js</file>
         <file>images/warning.png</file>
         <file>images/warning@2x.png</file>
-        <file>images/rightArrowInactive.png</file>
-        <file>images/rightArrowInactive@2x.png</file>
         <file>js/Windows.js</file>
         <file>js/Utils.js</file>
         <file>components/RadioButton.qml</file>
@@ -166,7 +171,6 @@
         <file>pages/settings/SettingsLog.qml</file>
         <file>pages/settings/SettingsLayout.qml</file>
         <file>pages/settings/SettingsInfo.qml</file>
-        <file>pages/settings/Navbar.qml</file>
         <file>components/WarningBox.qml</file>
         <file>images/miningdcy.png</file>
         <file>images/miningdcy@2x.png</file>
@@ -176,9 +180,9 @@
         <file>images/merchant/arrow_right.png</file>
         <file>images/merchant/bg.png</file>
         <file>images/merchant/input_box.png</file>
-        <file>fonts/FontAwesome/fa-brands-400.ttf</file>
-        <file>fonts/FontAwesome/fa-regular-400.ttf</file>
-        <file>fonts/FontAwesome/fa-solid-900.ttf</file>
+        <file>fonts/FontAwesome/fa-brands-400.otf</file>
+        <file>fonts/FontAwesome/fa-regular-400.otf</file>
+        <file>fonts/FontAwesome/fa-solid-900.otf</file>
         <file>fonts/FontAwesome/FontAwesome.qml</file>
         <file>fonts/FontAwesome/Object.qml</file>
         <file>fonts/FontAwesome/qmldir</file>
@@ -193,7 +197,6 @@
         <file>wizard/WizardHeader.qml</file>
         <file>wizard/WizardHome.qml</file>
         <file>wizard/WizardLanguage.qml</file>
-        <file>wizard/WizardLang.qml</file>
         <file>wizard/WizardNav.qml</file>
         <file>wizard/WizardWalletInput.qml</file>
         <file>wizard/WizardRestoreWallet1.qml</file>
@@ -209,11 +212,20 @@
         <file>js/Wizard.js</file>
         <file>components/LanguageSidebar.qml</file>
         <file>images/world-flags-globe.png</file>
-        <file>images/langFlagGrey.png</file>
         <file>images/restore-wallet-from-hardware@2x.png</file>
         <file>images/restore-wallet-from-hardware.png</file>
         <file>images/open-wallet-from-file@2x.png</file>
         <file>images/open-wallet-from-file.png</file>
+        <file>images/open-wallet-from-file-mainnet@2x.png</file>
+        <file>images/open-wallet-from-file-mainnet.png</file>
+        <file>images/open-wallet-from-file-stagenet@2x.png</file>
+        <file>images/open-wallet-from-file-stagenet.png</file>
+        <file>images/open-wallet-from-file-testnet@2x.png</file>
+        <file>images/open-wallet-from-file-testnet.png</file>
+        <file>images/open-wallet-from-file-view-only@2x.png</file>
+        <file>images/open-wallet-from-file-view-only.png</file>
+        <file>images/open-wallet-from-file-trezor@2x.png</file>
+        <file>images/open-wallet-from-file-trezor.png</file>
         <file>images/restore-wallet@2x.png</file>
         <file>images/restore-wallet.png</file>
         <file>images/create-wallet@2x.png</file>
@@ -224,12 +236,9 @@
         <file>images/local-node@2x.png</file>
         <file>images/local-node-full.png</file>
         <file>images/local-node-full@2x.png</file>
-        <file>wizard/WizardNavProgressDot.qml</file>
         <file>wizard/WizardOpenWallet1.qml</file>
         <file>images/arrow-right-in-circle.png</file>
         <file>images/arrow-right-in-circle@2x.png</file>
-        <file>images/themes/white/leftPanelBg.jpg</file>
-        <file>images/themes/white/middlePanelBg.jpg</file>
         <file>images/right.svg</file>
         <file>images/middlePanelShadow.png</file>
         <file>images/themes/white/titlebarLogo@2x.png</file>
@@ -240,7 +249,6 @@
         <file>images/themes/white/close.svg</file>
         <file>images/themes/white/fullscreen.svg</file>
         <file>images/themes/white/minimize.svg</file>
-        <file>images/themes/white/question.svg</file>
         <file>components/effects/ColorTransition.qml</file>
         <file>components/effects/GradientBackground.qml</file>
         <file>images/check-white.svg</file>
@@ -248,5 +256,16 @@
         <file>images/edit.svg</file>
         <file>images/arrow-right-in-circle-outline-medium-white.svg</file>
         <file>images/tails-grey.png</file>
+        <file>components/AdvancedOptionsItem.qml</file>
+        <file>images/busy-indicator.png</file>
+        <file>images/busy-indicator@2x.png</file>
+        <file>images/success.png</file>
+        <file>images/success@2x.png</file>
+        <file>components/SuccessfulTxDialog.qml</file>
+        <file>components/TxConfirmationDialog.qml</file>
+        <file>images/ledgerNanoS.png</file>
+        <file>images/ledgerNanoX.png</file>
+        <file>images/trezor.png</file>
+        <file>images/trezor@2x.png</file>
     </qresource>
 </RCC>

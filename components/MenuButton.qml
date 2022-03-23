@@ -36,7 +36,6 @@ Rectangle {
     id: button
     property alias text: label.text
     property bool checked: false
-    property alias dotColor: dot.color
     property alias symbol: symbolText.text
     property int numSelectedChildren: 0
     property var under: null
@@ -63,7 +62,7 @@ Rectangle {
     height: present ? ((appWindow.height >= 800) ? 44  : 38 ) : 0
 
     LinearGradient {
-        visible: isOpenGL && button.checked
+        visible: isOpenGL && (button.checked || buttonArea.containsMouse)
         height: parent.height
         width: 260
         anchors.verticalCenter: parent.verticalCenter
@@ -76,39 +75,24 @@ Rectangle {
             GradientStop { position: 0.0; color: DinastycoinComponents.Style.menuButtonGradientStart }
             GradientStop { position: 1.0; color: DinastycoinComponents.Style.menuButtonGradientStop }
         }
+        opacity: button.checked ? 1 : 0.3
     }
 
     // fallback hover effect when opengl is not available
     Rectangle {
-        visible: !isOpenGL && button.checked
+        visible: !isOpenGL && (button.checked || buttonArea.containsMouse)
         anchors.fill: parent
         color: DinastycoinComponents.Style.menuButtonFallbackBackgroundColor
+        opacity: button.checked ? 1 : 0.3
     }
 
     // button decorations that are subject to leftMargin offsets
     Rectangle {
         anchors.left: parent.left
-        anchors.leftMargin: parent.getOffset() + 20
+        anchors.leftMargin: 20
         height: parent.height
-        width: button.checked ? 20: 10
-        color: "transparent"
-
-        // dot if unchecked
-        Rectangle {
-            id: dot
-            anchors.centerIn: parent
-            width: button.checked ? 20 : 8
-            height: button.checked ? 20 : 8
-            radius: button.checked ? 20 : 4
-            color: button.dotColor
-            // arrow if checked
-            Image {
-                anchors.centerIn: parent
-                anchors.left: parent.left
-                source: DinastycoinComponents.Style.menuButtonImageDotArrowSource
-                visible: button.checked
-            }
-        }
+        width: 2
+        color: button.checked ? DinastycoinComponents.Style.buttonBackgroundColor : "transparent"
 
         // button text
         DinastycoinComponents.TextPlain {
@@ -118,7 +102,7 @@ Rectangle {
             themeTransitionWhiteColor: DinastycoinComponents.Style._w_menuButtonTextColor
             anchors.verticalCenter: parent.verticalCenter
             anchors.left: parent.right
-            anchors.leftMargin: 8
+            anchors.leftMargin: button.getOffset() + 8
             font.bold: true
             font.pixelSize: 14
         }
@@ -144,7 +128,7 @@ Rectangle {
         anchors.verticalCenter: parent.verticalCenter
         font.pixelSize: 12
         font.bold: true
-        color: button.checked || buttonArea.containsMouse ? DinastycoinComponents.Style.menuButtonTextColor : dot.color
+        color: DinastycoinComponents.Style.menuButtonTextColor
         visible: appWindow.ctrlPressed
         themeTransition: false
     }

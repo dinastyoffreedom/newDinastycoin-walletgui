@@ -33,6 +33,7 @@ import QtQuick.Controls 2.0
 import QtGraphicalEffects 1.0
 import Qt.labs.folderlistmodel 2.1
 import dinastycoinComponents.NetworkType 1.0
+import dinastycoinComponents.WalletKeysFilesModel 1.0
 
 import "../js/Wizard.js" as Wizard
 import "../components"
@@ -44,8 +45,13 @@ Rectangle {
 
     color: "transparent"
     property alias pageHeight: pageRoot.height
+    property alias pageRoot: pageRoot
     property string viewName: "wizardOpenWallet1"
     property int walletCount: walletKeysFilesModel.rowCount()
+
+    WalletKeysFilesModel {
+        id: walletKeysFilesModel
+    }
 
     ColumnLayout {
         id: pageRoot
@@ -53,6 +59,7 @@ Rectangle {
         width: parent.width - 100
         Layout.fillWidth: true
         anchors.horizontalCenter: parent.horizontalCenter;
+        KeyNavigation.tab: openWalletFromFileHeader
 
         spacing: 0
 
@@ -64,12 +71,19 @@ Rectangle {
             spacing: 10
 
             WizardHeader {
+                id: openWalletFromFileHeader
                 title: qsTr("Open a wallet from file") + translationManager.emptyString
                 subtitle: qsTr("Import an existing .keys wallet file from your computer.") + translationManager.emptyString
+                Accessible.role: Accessible.StaticText
+                Accessible.name: title + ". " + subtitle
+                Keys.onUpPressed: wizardNav.btnNext.forceActiveFocus();
+                Keys.onBacktabPressed: wizardNav.btnNext.forceActiveFocus();
+                Keys.onDownPressed: recentList.itemAt(0).forceActiveFocus();
+                Keys.onTabPressed: recentList.itemAt(0).forceActiveFocus();
             }
 
             GridLayout {
-                visible: walletKeysFilesModel.rowCount() > 0
+                visible: (walletKeysFilesModel ? walletKeysFilesModel.rowCount() : 0) > 0
                 Layout.topMargin: 10
                 Layout.fillWidth: true
                 columnSpacing: 20
@@ -112,14 +126,35 @@ Rectangle {
                 Repeater {
                     id: recentList
                     clip: true
-                    model: walletKeysFilesModelProxy
+                    model: walletKeysFilesModel.proxyModel
                     Layout.fillWidth: true
                     Layout.minimumWidth: flow.itemHeight
                     Layout.preferredHeight: parent.height
 
+                    function moveUp(itemIndex) {
+                        if (itemIndex == 0) {
+                            openWalletFromFileHeader.forceActiveFocus();
+                        } else {
+                            recentList.itemAt(itemIndex - 1).forceActiveFocus();
+                        }
+                    }
+
+                    function moveDown(itemIndex) {
+                        if (itemIndex + 1 == recentList.count) {
+                            wizardNav.btnPrev.forceActiveFocus();
+                        } else {
+                            recentList.itemAt(itemIndex + 1).forceActiveFocus();
+                        }
+                    }
+
+                    function openSelectedWalletFile(networktype, path) {
+                        persistentSettings.nettype = parseInt(networktype);
+                        wizardController.openWalletFile(path);
+                    }
+
                     delegate: Rectangle {
                         // inherited roles from walletKeysFilesModel:
-                        // index, modified, accessed, path, networktype, address
+                        // index, fileName, modified, accessed, path, networktype, address
                         id: item
                         height: flow.itemHeight
                         width: {
@@ -128,17 +163,29 @@ Rectangle {
                             return parent.width / 3
                         }
                         property string networkType: {
-                            if(networktype === 0) return qsTr("Mainnet");
+                            if(networktype === 0 && appWindow.walletMode >= 2) return qsTr("Mainnet");
                             else if(networktype === 1) return qsTr("Testnet");
                             else if(networktype === 2) return qsTr("Stagenet");
                             return "";
                         }
-                        property string fileName: {
-                            var spl = path.split("/");
-                            return spl[spl.length - 1].replace(".keys", "");
+                        color: item.focus || itemMouseArea.containsMouse ? DinastycoinComponents.Style.titleBarButtonHoverColor : "transparent"
+                        border.width: item.focus ? 3 : 0
+                        border.color: DinastycoinComponents.Style.inputBorderColorActive
+
+                        Accessible.role: Accessible.ListItem
+                        Accessible.name: {
+                            if (networktype === 0) var networkTypeText = qsTr("Mainnet wallet") + translationManager.emptyString;
+                            if (networktype === 1) var networkTypeText = qsTr("Testnet wallet") + translationManager.emptyString;
+                            if (networktype === 2) var networkTypeText = qsTr("Stagenet wallet") + translationManager.emptyString;
+
+                            return fileName + ". " + networkTypeText;
                         }
-                        property string filePath: { return path }
-                        color: "transparent"
+                        Keys.onUpPressed: recentList.moveUp(index);
+                        Keys.onBacktabPressed: recentList.moveUp(index);
+                        Keys.onDownPressed: recentList.moveDown(index);
+                        Keys.onTabPressed: recentList.moveDown(index);
+                        Keys.onEnterPressed: recentList.openSelectedWalletFile(networktype, path);
+                        Keys.onReturnPressed: recentList.openSelectedWalletFile(networktype, path);
 
                         Rectangle {
                             height: 1
@@ -171,7 +218,14 @@ Rectangle {
                                     anchors.left: parent.left
                                     anchors.verticalCenter: parent.verticalCenter
                                     fillMode: Image.PreserveAspectFit
-                                    source: "qrc:///images/open-wallet-from-file.png"
+                                    source: {
+                                        if (networktype === 0 && fileName.toLowerCase().includes("viewonly")) return "qrc:///images/open-wallet-from-file-view-only.png";
+                                        else if (networktype === 0 && fileName.toLowerCase().includes("trezor")) return "qrc:///images/open-wallet-from-file-trezor.png";
+                                        else if (networktype === 0 && fileName.toLowerCase().includes("ledger")) return "qrc:///images/restore-wallet-from-hardware.png";
+                                        else if (networktype === 0) return "qrc:///images/open-wallet-from-file-mainnet.png";
+                                        else if (networktype === 1) return "qrc:///images/open-wallet-from-file-testnet.png";
+                                        else if (networktype === 2) return "qrc:///images/open-wallet-from-file-stagenet.png";
+                                    }
                                     visible: {
                                         if(!isOpenGL) return true;
                                         if(DinastycoinComponents.Style.blackTheme) return true;
@@ -202,9 +256,9 @@ Rectangle {
                                     text: {
                                         // truncate on window width
                                         var maxLength = wizardController.layoutScale <= 1 ? 12 : 16
-                                        if(item.fileName.length > maxLength)
-                                            return item.fileName.substring(0, maxLength) + "...";
-                                        return item.fileName;
+                                        if (fileName.length > maxLength)
+                                            return fileName.substring(0, maxLength) + "...";
+                                        return fileName;
                                     }
 
                                     Layout.preferredHeight: 26
@@ -216,12 +270,12 @@ Rectangle {
 
                                     wrapMode: Text.WordWrap
                                     leftPadding: 0
-                                    topPadding: networktype !== -1 ? 8 : 4
+                                    topPadding: networkType !== "" ? 8 : 4
                                     bottomPadding: 0
                                 }
 
                                 Text {
-                                    visible: networktype !== -1
+                                    visible: networkType !== ""
                                     Layout.preferredHeight: 24
                                     Layout.alignment: Qt.AlignLeft | Qt.AlignVCenter
                                     Layout.fillWidth: true
@@ -257,21 +311,11 @@ Rectangle {
                         }
 
                         MouseArea {
+                            id: itemMouseArea
                             anchors.fill: parent
                             hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
-
-                            onEntered: {
-                                parent.color = DinastycoinComponents.Style.titleBarButtonHoverColor;
-                            }
-                            onExited: {
-                                parent.color = "transparent";
-                            }
-                            onClicked: {
-                                persistentSettings.nettype = parseInt(networktype)
-
-                                wizardController.openWalletFile(item.filePath);
-                            }
+                            onClicked: recentList.openSelectedWalletFile(networktype, path);
                         }
                     }
                 }
@@ -282,11 +326,15 @@ Rectangle {
             }
 
             WizardNav {
+                id: wizardNav
                 Layout.topMargin: 0
                 progressEnabled: false
                 btnPrev.text: qsTr("Back to menu") + translationManager.emptyString
                 btnNext.text: qsTr("Browse filesystem") + translationManager.emptyString
                 btnNext.visible: true
+                btnPrevKeyNavigationBackTab: recentList.itemAt(recentList.count - 1)
+                btnNextKeyNavigationTab: openWalletFromFileHeader
+
                 onPrevClicked: {
                     wizardStateView.state = "wizardHome";
                 }
@@ -299,7 +347,7 @@ Rectangle {
 
     function onPageCompleted(previousView){
         if(previousView.viewName == "wizardHome"){
-            walletKeysFilesModel.refresh(dinastycoinAccountsDir);
+            walletKeysFilesModel.refresh(appWindow.accountsDir);
             wizardOpenWallet1.walletCount = walletKeysFilesModel.rowCount();
             flow._height = flow.calcHeight();
         }

@@ -1,4 +1,4 @@
-// Parts are Copyright (c) 2019, The Dinastycoin team
+// Copyright (c) 2014-2020, The Dinastycoin Project
 // 
 // All rights reserved.
 // 
@@ -37,23 +37,12 @@ import QtQuick.Controls 2.0
 Drawer {
     id: sideBar
 
-    // @TODO: Qt 5.10 introduces `opened` built-in for Drawer
-    property bool isOpened: false
-
-    onClosed: {
-        isOpened = false;
-    }
-
-    onOpened: {
-        isOpened = true;
-    }
-
     width: 240
     height: parent.height - (persistentSettings.customDecorations ? 50 : 0)
     y: titleBar.height
 
     background: Rectangle {
-        color: "#0d0d0d"
+        color: DinastycoinComponents.Style.blackTheme ? "#0d0d0d" : "white"
         width: parent.width
     }
 
@@ -64,25 +53,78 @@ Drawer {
         color: "red"
 
         ListView {
+            id: languagesListView
             clip: true
             Layout.fillHeight: true
             Layout.fillWidth: true
             boundsBehavior: Flickable.StopAtBounds
             width: sideBar.width
             height: sideBar.height
+            focus: true
 
             model: langModel
 
+            Keys.onUpPressed: currentIndex !== 0 ? currentIndex = currentIndex - 1 : ""
+            Keys.onBacktabPressed: currentIndex !== 0 ? currentIndex = currentIndex - 1 : ""
+            Keys.onDownPressed: currentIndex + 1 !== count ? currentIndex = currentIndex + 1 : ""
+            Keys.onTabPressed: currentIndex + 1 !== count ? currentIndex = currentIndex + 1 : ""
+
             delegate: Rectangle {
                 id: item
-                color: "transparent"
+                color: index == languagesListView.currentIndex ? DinastycoinComponents.Style.titleBarButtonHoverColor : "transparent"
                 width: sideBar.width
                 height: 32
 
+                Accessible.role: Accessible.ListItem
+                Accessible.name: display_name
+                Keys.onEnterPressed: setSelectedItemAsLanguage();
+                Keys.onReturnPressed: setSelectedItemAsLanguage();
+                Keys.onSpacePressed: setSelectedItemAsLanguage();
+
+                function setSelectedItemAsLanguage() {
+                    var locale_spl = locale.split("_");
+
+                    // reload active translations
+                    console.log(locale_spl[0]);
+                    translationManager.setLanguage(locale_spl[0]);
+
+                    // set wizard language settings
+                    persistentSettings.locale = locale;
+                    persistentSettings.language = display_name;
+                    persistentSettings.language_wallet = wallet_language;
+
+                    appWindow.showStatusMessage(qsTr("Language changed."), 3);
+                    appWindow.toggleLanguageView();
+                }
+
+                Rectangle {
+                    id: selectedIndicator
+                    anchors.left: parent.left
+                    anchors.leftMargin: 0
+                    height: parent.height
+                    width: 2
+                    color: index == languagesListView.currentIndex ? DinastycoinComponents.Style.buttonBackgroundColor : "transparent"
+                }
+
+                Rectangle {
+                    id: flagRect
+                    height: 24
+                    width: 24
+                    anchors.left: selectedIndicator.right
+                    anchors.leftMargin: 4
+                    anchors.verticalCenter: parent.verticalCenter
+                    color: "transparent"
+
+                    Image {
+                        anchors.fill: parent
+                        source: flag
+                    }
+                }
+
                 DinastycoinComponents.TextPlain {
                     anchors.left: parent.left
-                    anchors.leftMargin: 16
-                    font.bold: true
+                    anchors.leftMargin: 32
+                    font.bold: languagesListView.currentIndex == index ? true : false
                     font.pixelSize: 14
                     color: DinastycoinComponents.Style.defaultFontColor
                     text: display_name
@@ -108,19 +150,7 @@ Drawer {
                     MouseArea {
                         anchors.fill: parent
                         cursorShape: Qt.PointingHandCursor
-                        onClicked: {
-                            var locale_spl = locale.split("_");
-
-                            // reload active translations
-                            console.log(locale_spl[0]);
-                            translationManager.setLanguage(locale_spl[0]);
-
-                            // set wizard language settings
-                            wizard.language_locale = locale;
-                            wizard.language_wallet = wallet_language;
-                            wizard.language_language = display_name + " (" + locale_spl[1] + ") ";
-                            sideBar.close()
-                        }
+                        onClicked: setSelectedItemAsLanguage();
                         hoverEnabled: true
                         onEntered: {
                             // item.color = "#26FFFFFF"
@@ -134,15 +164,8 @@ Drawer {
                 }
             }
 
-            ScrollIndicator.vertical: ScrollIndicator {
-                // @TODO: QT 5.9 introduces `policy: ScrollBar.AlwaysOn`
-                active: true
-                contentItem.opacity: 0.7
-                onActiveChanged: {
-                    if (!active) {
-                        active = true;
-                    }
-                }
+            ScrollBar.vertical: ScrollBar {
+                onActiveChanged: if (!active && !isMac) active = true
             }
         }
     }
@@ -164,6 +187,14 @@ Drawer {
         onStatusChanged: {
             if(status === XmlListModel.Ready){
                 console.log("languages available: ",count);
+            }
+        }
+    }
+
+    function selectCurrentLanguage() {
+        for (var i = 0; i < langModel.count; ++i) {
+            if (langModel.get(i).display_name === persistentSettings.language)  {
+                languagesListView.currentIndex = i;
             }
         }
     }

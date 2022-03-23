@@ -32,7 +32,6 @@
 AddressBook::AddressBook(Dinastycoin::AddressBook *abImpl,QObject *parent)
   : QObject(parent), m_addressBookImpl(abImpl)
 {
-    qDebug(__FUNCTION__);
     getAll();
 }
 
@@ -46,58 +45,106 @@ int AddressBook::errorCode() const
     return m_addressBookImpl->errorCode();
 }
 
-QList<Dinastycoin::AddressBookRow*> AddressBook::getAll(bool update) const
+void AddressBook::getAll()
 {
-    qDebug(__FUNCTION__);
-
     emit refreshStarted();
 
-    if(update)
-        m_rows.clear();
+    {
+        QWriteLocker locker(&m_lock);
 
-    if (m_rows.empty()){
+        m_addresses.clear();
+        m_rows.clear();
         for (auto &abr: m_addressBookImpl->getAll()) {
+            m_addresses.insert(QString::fromStdString(abr->getAddress()), m_rows.size());
             m_rows.append(abr);
         }
     }
 
     emit refreshFinished();
-    return m_rows;
-
 }
 
-Dinastycoin::AddressBookRow * AddressBook::getRow(int index) const
+bool AddressBook::getRow(int index, std::function<void (Dinastycoin::AddressBookRow &)> callback) const
 {
-    return m_rows.at(index);
+    QReadLocker locker(&m_lock);
+
+    if (index < 0 || index >= m_rows.size())
+    {
+        return false;
+    }
+
+    callback(*m_rows.value(index));
+    return true;
 }
 
-bool AddressBook::addRow(const QString &address, const QString &payment_id, const QString &description) const
+bool AddressBook::addRow(const QString &address, const QString &payment_id, const QString &description)
 {
     //  virtual bool addRow(const std::string &dst_addr , const std::string &payment_id, const std::string &description) = 0;
-    bool r = m_addressBookImpl->addRow(address.toStdString(), payment_id.toStdString(), description.toStdString());
+    bool result;
 
-    if(r)
-        getAll(true);
+    {
+        QWriteLocker locker(&m_lock);
 
-    return r;
+        result = m_addressBookImpl->addRow(address.toStdString(), payment_id.toStdString(), description.toStdString());
+    }
+
+    if (result)
+    {
+        getAll();
+    }
+
+    return result;
 }
 
-bool AddressBook::deleteRow(int rowId) const
+bool AddressBook::deleteRow(int rowId)
 {
-    bool r = m_addressBookImpl->deleteRow(rowId);
+    bool result;
+
+    {
+        QWriteLocker locker(&m_lock);
+
+        result = m_addressBookImpl->deleteRow(rowId);
+    }
 
     // Fetch new data from wallet2.
-    getAll(true);
+    if (result)
+    {
+        getAll();
+    }
 
-    return r;
+    return result;
 }
 
 quint64 AddressBook::count() const
 {
+    QReadLocker locker(&m_lock);
+
     return m_rows.size();
 }
 
-int AddressBook::lookupPaymentID(const QString &payment_id) const
+QString AddressBook::getDescription(const QString &address) const
 {
-    return m_addressBookImpl->lookupPaymentID(payment_id.toStdString());
+    QReadLocker locker(&m_lock);
+
+    const QMap<QString, size_t>::const_iterator it = m_addresses.find(address);
+    if (it == m_addresses.end())
+    {
+        return {};
+    }
+    return QString::fromStdString(m_rows.value(*it)->getDescription());
 }
+
+void AddressBook::setDescription(int index, const QString &description)
+{
+     bool result;
+
+     {
+         QWriteLocker locker(&m_lock);
+
+         result = m_addressBookImpl->setDescription(index, description.toStdString());
+     }
+
+     if (result)
+     {
+         getAll();
+     }
+ }

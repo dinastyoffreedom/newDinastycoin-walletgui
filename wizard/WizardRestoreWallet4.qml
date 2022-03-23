@@ -38,6 +38,7 @@ Rectangle {
 
     color: "transparent"
     property alias pageHeight: pageRoot.height
+    property alias wizardNav: wizardNav
     property string viewName: "wizardRestoreWallet4"
 
     ColumnLayout {
@@ -64,10 +65,11 @@ Rectangle {
             WizardSummary {}
 
             WizardNav {
+                id: wizardNav
                 Layout.topMargin: 24
-                btnNextText: "Open wallet"
-                progressSteps: 4
-                progress: 4
+                btnNextText: qsTr("Create wallet") + translationManager.emptyString
+                progressSteps: appWindow.walletMode <= 1 ? 3 : 4
+                progress: appWindow.walletMode <= 1 ? 2 : 3
 
                 onPrevClicked: {
                     if (appWindow.walletMode <= 1){
@@ -77,9 +79,14 @@ Rectangle {
                     }
                 }
                 onNextClicked: {
+                    btnNext.enabled = false;
+                    wizardController.wizardStateView.wizardRestoreWallet2View.pwField = "";
+                    wizardController.wizardStateView.wizardRestoreWallet2View.pwConfirmField = "";
                     wizardController.recoveryWallet();
-                    wizardController.writeWallet();
-                    wizardController.useDinastycoinClicked();
+                    wizardController.writeWallet(function() {
+                        wizardController.useDinastycoinClicked();
+                        btnNext.enabled = true;
+                    });
                 }
             }
         }

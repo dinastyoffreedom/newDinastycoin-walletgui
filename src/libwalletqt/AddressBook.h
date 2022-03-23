@@ -30,7 +30,9 @@
 #define ADDRESSBOOK_H
 
 #include <wallet/api/wallet2_api.h>
+#include <QMap>
 #include <QObject>
+#include <QReadWriteLock>
 #include <QList>
 #include <QDateTime>
 
@@ -43,14 +45,14 @@ class AddressBook : public QObject
 {
     Q_OBJECT
 public:
-    Q_INVOKABLE QList<Dinastycoin::AddressBookRow*> getAll(bool update = false) const;
-    Q_INVOKABLE Dinastycoin::AddressBookRow * getRow(int index) const;
-    Q_INVOKABLE bool addRow(const QString &address, const QString &payment_id, const QString &description) const;
-    Q_INVOKABLE bool deleteRow(int rowId) const;
+    Q_INVOKABLE bool getRow(int index, std::function<void (Dinastycoin::AddressBookRow &)> callback) const;
+    Q_INVOKABLE bool addRow(const QString &address, const QString &payment_id, const QString &description);
+    Q_INVOKABLE bool deleteRow(int rowId);
     quint64 count() const;
     Q_INVOKABLE QString errorString() const;
     Q_INVOKABLE int errorCode() const;
-    Q_INVOKABLE int lookupPaymentID(const QString &payment_id) const;
+    Q_INVOKABLE QString getDescription(const QString &address) const;
+    Q_INVOKABLE void setDescription(int index, const QString &label);
 
     enum ErrorCode {
         Status_Ok,
@@ -61,6 +63,8 @@ public:
 
     Q_ENUM(ErrorCode);
 
+private:
+    void getAll();
 
 signals:
     void refreshStarted() const;
@@ -73,7 +77,9 @@ private:
     explicit AddressBook(Dinastycoin::AddressBook * abImpl, QObject *parent);
     friend class Wallet;
     Dinastycoin::AddressBook * m_addressBookImpl;
-    mutable QList<Dinastycoin::AddressBookRow*> m_rows;
+    mutable QReadWriteLock m_lock;
+    QList<Dinastycoin::AddressBookRow*> m_rows;
+    QMap<QString, size_t> m_addresses;
 };
 
 #endif // ADDRESSBOOK_H
