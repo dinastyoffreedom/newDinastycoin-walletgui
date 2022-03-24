@@ -409,7 +409,7 @@ Rectangle {
                 small: true
                 text: qsTr("Donate to Dinastycoin") + translationManager.emptyString
                 onClicked: {
-                    middlePanel.sendTo("888tNkZrPN6JsEgekjMnABU4TBzc2Dt29EPAvkRxbANsAnjyPbb3iQ1YBRk1UXcdRsiKc9dhwMVgN5S9cQUiyoogDavup3H", "", qsTr("Donation to Dinastycoin Core Team") + translationManager.emptyString);
+                    middlePanel.sendTo("NYz4mXJcoxV9TNiymiSYxu62qKu7bjTgDZWJjvMUKVPvZ1VGEW6VrNxh8WJjddi7Hr56MYbyK2Hp6CWZ2Uyfat9V5Lhvz2BAJe", "", qsTr("Donation to Dinastycoin Core Team") + translationManager.emptyString);
                 }
             }
         }
