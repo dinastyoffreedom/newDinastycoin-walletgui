@@ -25,4 +25,4 @@ test-*file
 test-*line
 test-*lib
 dictgen
-dict-*.h
+
