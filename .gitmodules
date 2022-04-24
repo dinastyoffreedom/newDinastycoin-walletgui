@@ -2,3 +2,6 @@
 	path = external/quirc
 	url = https://github.com/dlbeer/quirc/
 
+[submodule "dinastycoin"]
+	path = dinastycoin
+	url = https://github.com/dinastyoffreedom/dinastycoin
